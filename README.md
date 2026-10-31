@@ -59,8 +59,8 @@ DataFarm can be configured to generate datasets with different characteristics:
 - `N_JOBS` defines the number of diverse Abstract Plans that will be generated.
 - `N_VERSIONS` defined the number of versions that will be generated for each Abstract Plan.
 - `JOB_SEED` makes the generation process replicable with a seed of your choice. With -1, each job's seed is derived from its plan index (also deterministic); otherwise it is derived from `JOB_SEED` and the plan index, so different plans still get different tables, filters and group-by fields.
-- `DATA_MANAGER` specifies the database manager to be used: "TPCH" for TPC-H, "JOB" for the Join Order Benchmark on IMDB (Wayang or Spark, see [Join Order Benchmark (JOB)](#join-order-benchmark-job)).
-- `TARGET_PLATFORM` specifies the platform the jobs are generated for: "Flink", "Wayang" or "Spark" (see [Spark jobs](#spark-jobs)).
+- `DATA_MANAGER` specifies the database manager to be used: "TPCH" for TPC-H, "JOB" for the Join Order Benchmark on IMDB (Wayang, Spark or SQL, see [Join Order Benchmark (JOB)](#join-order-benchmark-job)).
+- `TARGET_PLATFORM` specifies the platform the jobs are generated for: "Flink", "Wayang", "Spark" (see [Spark jobs](#spark-jobs)) or "SQL" (see [SQL jobs](#sql-jobs)).
 - `DATA_ID` specifies the id of the input data meta-data that has to be used by the system. The input data meta-data can be specified in `TableMetaData.py`.
 - `EXPERIMENT_ID` defines the id of the experiment. It will be the name of the folder where the results of the generation process will be stored.
 
@@ -92,7 +92,7 @@ DataFarm can also generate Wayang jobs over the IMDB database of the Join Order 
 
 ```Python
 DATA_MANAGER = "JOB"
-TARGET_PLATFORM = "Wayang"  # or "Spark"
+TARGET_PLATFORM = "Wayang"  # or "Spark" or "SQL"
 ```
 
 **Data.** The jobs read the 21 IMDB CSV files of the original JOB dump (`title.csv`, `cast_info.csv`, ...) from
@@ -167,4 +167,22 @@ spark-submit --class datafarm.generated.spark.Job0v0 target/scala-2.12/datafarm-
 - A Reduce pair in the abstract plan is a keyed reduce on a group field for TPC-H (as in the Flink TPC-H jobs) and
   a global reduce for JOB (the `MIN(...)` aggregate). Spark TPC-H group-bys use the chosen group field itself.
 - `RunLabelForecaster.py` / `BuildAndSubmit.py` still submit Flink jobs only.
+
+## SQL jobs
+With `TARGET_PLATFORM = "SQL"`, DataFarm generates SQL queries for TPC-H and JOB from the same abstract plans, join
+sequences and filters as the Wayang, Flink and Spark jobs.
+
+- Each job is one standard-SQL statement in `JobXvY.sql`: every plan operator becomes a common table expression named
+  like the variables of the dataflow jobs (`source0`, `filter1`, `join2`, ...), and the job returns the output of the
+  last one. Tested with PostgreSQL 16 and DuckDB.
+- The generator writes `schema.sql` (the `CREATE TABLE` statements, with load commands for PostgreSQL and DuckDB in
+  its header) next to the jobs. TPC-H uses the column names of dbgen (`l_orderkey`, ...), JOB those of its `schema.sql`.
+- Operators map to SQL as follows. Joins keep the right-hand rows, as in the dataflow jobs. A group-by (or keyed
+  Reduce) returns one row per key with `MIN` of each other column; a global Reduce returns one row with `MIN` of each
+  column. Maps and partitions pass their input through, since their UDF cost has no SQL counterpart.
+- Unlike Wayang, Flink and Spark, which run the generated plan as written, the database optimizes the query: it may
+  reorder joins and push down filters. That is what you want when the queries feed a learned query optimizer.
+- The dataflow jobs keep an arbitrary row per group, where SQL takes the per-column minimum. Jobs that join, filter or group
+  the output of a group-by again can therefore give different result sizes on SQL than on the dataflow platforms
+  (10 of 80 TPC-H jobs in our tests, none of the JOB jobs).
 

@@ -154,10 +154,10 @@ object JOBSchema {
       s"CREATE TABLE ${t.name} (\n${cols.mkString(",\n")}\n);"
     }
     s"""-- IMDB tables of the Join Order Benchmark, used by the generated SQL jobs.
-       |-- Load the CSV files of the JOB dump, e.g. in PostgreSQL:
+       |-- Load the CSV files of the JOB dump (comma separated, '"' quotes, '\\' escapes), e.g. in PostgreSQL:
        |--   \\copy title FROM 'title.csv' WITH (FORMAT csv, ESCAPE '\\')
-       |-- or in DuckDB:
-       |--   COPY title FROM 'title.csv' (FORMAT csv, ESCAPE '\\', HEADER false);
+       |-- or in DuckDB (its dialect detection does not handle these files, so it is switched off):
+       |--   COPY title FROM 'title.csv' (FORMAT csv, DELIMITER ',', QUOTE '"', ESCAPE '\\', HEADER false, AUTO_DETECT false);
        |
        |${creates.mkString("\n\n")}
        |""".stripMargin
