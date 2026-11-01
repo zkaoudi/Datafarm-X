@@ -6,8 +6,17 @@ import networkx as nx
 from networkx.algorithms.dag import dag_longest_path_length
 import pandas as pd
 
+
 from datafarm.abstract_generation import FeatureExtraction
 from datafarm.abstract_generation.Node import NodeOp
+
+
+def _quantile(a, q, method):
+    """np.quantile with the given method; NumPy 1.22 renamed `interpolation` to `method` (removed in NumPy 2)."""
+    try:
+        return np.quantile(a, q=q, method=method)
+    except TypeError:  # NumPy < 1.22
+        return np.quantile(a, q=q, interpolation=method)
 
 
 class AbstactPlanGeneratorModel:
@@ -60,8 +69,8 @@ class AbstactPlanGeneratorModel:
             [dag_longest_path_length(pg) for pg in exec_plans_graph]
         )
 
-        self.longest_path_length_dist = np.quantile(
-            path_lengths, q=np.arange(0.01, 1.0, 0.01), interpolation="higher"
+        self.longest_path_length_dist = _quantile(
+            path_lengths, q=np.arange(0.01, 1.0, 0.01), method="higher"
         )
         # [0.1, 0.25, 0.5, 0.75, 0.9, 1.0]
         # print(self.longest_path_length_dist)
@@ -128,8 +137,8 @@ class AbstactPlanGeneratorModel:
             .sum(axis=1)
             .groupby(level=0)
             .apply(
-                lambda x: np.quantile(
-                    np.array(x), q=np.arange(0.01, 1.0, 0.01), interpolation="lower"
+                lambda x: _quantile(
+                    np.array(x), q=np.arange(0.01, 1.0, 0.01), method="lower"
                 )
             )
             .to_dict()

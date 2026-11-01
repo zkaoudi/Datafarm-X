@@ -1,3 +1,12 @@
+"""
+Label generated Flink jobs on TPC-H with their run times (optional; see "Labeling jobs" in the README).
+
+    python RunGenerator.py --platform Flink --dataset TPCH
+    python RunLabelForecaster.py                     # labels training-data/Flink_TPCH/
+
+Needs Python 3.6-3.8 with requirements-labeling.txt and a running Flink 1.10 cluster (FLINK_HOME etc. in CONFIG.py).
+"""
+import argparse
 import os
 import sys
 import warnings
@@ -308,8 +317,16 @@ def run(config):
 #         Exception(f"No experiment type '{exp_type}'")
 
 
-def main():
-    # exp_type = "TPCH"  # "TPCH" # "IMDB"
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--experiment", default=CONFIG.EXPERIMENT_ID or "Flink_TPCH",
+                    help="experiment folder with the generated Flink jobs (default: Flink_TPCH)")
+    ap.add_argument("--output", default=CONFIG.OUTPUT_PATH,
+                    help="folder that contains the experiment folder (default: training-data/)")
+    args = ap.parse_args(argv)
+    # the label forecaster runs Flink jobs and uses TPC-H table cardinalities
+    CONFIG.update(TARGET_PLATFORM="Flink", DATA_MANAGER="TPCH", EXPERIMENT_ID=args.experiment,
+                  OUTPUT_PATH=os.path.abspath(args.output) if args.output else "")
     config = CONFIG
     random_sampling = False
 

@@ -2,7 +2,7 @@
 Load TPC-H or JOB (IMDB) data into SQL Server for the generated SQL jobs.
 
 The rows are parsed exactly as the generated Wayang/Spark jobs parse them (for JOB with the same CSV
-rules as datafarm/datasets_metadata/job/JOB_MetaDataAnalyzer.py: backslash escapes, empty
+rules as datafarm/datasets_metadata/job/MetaDataAnalyzer.py: backslash escapes, empty
 unquoted field = NULL), so all platforms see the same data. BULK INSERT cannot read the
 backslash-escaped JOB files; for TPC-H, BULK INSERT (see the header of schema.sql) is faster.
 
@@ -23,7 +23,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))  # repository root
-from datafarm.datasets_metadata.job import JOB_MetaDataAnalyzer as JOB  # noqa: E402  (CSV parsing and column types of the JOB tables)
+from datafarm.datasets_metadata.job import MetaDataAnalyzer as JOB  # noqa: E402  (CSV parsing and column types of the JOB tables)
 
 TPCH_TABLES = ["region", "nation", "supplier", "customer", "part", "partsupp", "orders", "lineitem"]
 

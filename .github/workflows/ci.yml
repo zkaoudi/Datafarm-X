@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    name: Generate jobs (Python ${{ matrix.python }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.8", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Python requirements
+        run: pip install -r requirements.txt duckdb
+      - name: Generate jobs for every platform and dataset
+        run: |
+          set -e
+          for combo in TPCH:Flink TPCH:Wayang TPCH:Spark TPCH:SQL TPCH:SQLServer TPCH:SQLServerLTR \
+                       JOB:Wayang JOB:Spark JOB:SQL JOB:SQLServer; do
+            dataset=${combo%%:*}; platform=${combo#*:}
+            echo "::group::$platform on $dataset"
+            python RunGenerator.py --dataset $dataset --platform $platform --plans 5 --versions 2
+            echo "::endgroup::"
+            python - "training-data/${platform}_${dataset}/generated_jobs/generated_jobs_info.json" <<'EOF'
+          import json, sys
+          jobs = json.load(open(sys.argv[1]))
+          assert len(jobs) == 10, f"expected 10 jobs, got {len(jobs)}"
+          print(f"{len(jobs)} jobs described in {sys.argv[1]}")
+          EOF
+          done
+      - name: Check the SQL jobs with DuckDB
+        run: |
+          python .github/scripts/check_sql_jobs.py training-data/SQL_TPCH/generated_jobs
+          python .github/scripts/check_sql_jobs.py training-data/SQL_JOB/generated_jobs
+      - name: Compile the Spark jobs
+        if: matrix.python == '3.13'
+        run: |
+          (cd training-data/Spark_TPCH/generated_jobs && sbt -batch package)
+          (cd training-data/Spark_JOB/generated_jobs && sbt -batch package)
+      - name: Same seed gives the same jobs
+        run: |
+          python RunGenerator.py --dataset JOB --platform SQL --plans 5 --versions 2 --experiment again
+          diff -r training-data/SQL_JOB/generated_jobs training-data/again/generated_jobs
+
+  labeling:
+    name: Labeling code (Python 3.8)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+      - name: Install requirements
+        run: |
+          sudo apt-get update && sudo apt-get install -y graphviz libgraphviz-dev
+          pip install -r requirements-labeling.txt "pytest<8"
+      - name: Tests of the quantile forest
+        run: python -m pytest -q datafarm/labeling/ActiveModel/quantile/tests
+      - name: Every module imports
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python - <<'EOF'
+          import importlib, pkgutil, datafarm
+          for m in pkgutil.walk_packages(datafarm.__path__, "datafarm."):
+              importlib.import_module(m.name)
+          import RunGenerator, RunLabelForecaster
+          print("all modules import")
+          EOF

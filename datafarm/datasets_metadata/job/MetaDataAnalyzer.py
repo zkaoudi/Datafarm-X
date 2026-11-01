@@ -8,7 +8,7 @@ exactly the semantics of the generated Wayang code (same CSV parsing, same NULL 
 writes the measured values back into the catalog.
 
 Usage:
-    python JOB_MetaDataAnalyzer.py /path/to/imdb_csv_dir [--catalog PATH] [--output PATH] [--tables t1,t2]
+    python datafarm/datasets_metadata/job/MetaDataAnalyzer.py /path/to/imdb_csv_dir [--catalog PATH] [--output PATH] [--tables t1,t2]
 
 Only the Python standard library is needed. One pass per table; cast_info (~36M rows) takes a while.
 """
