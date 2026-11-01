@@ -29,15 +29,15 @@ class CONFIG:
     #################################################################
 
     # DATA GENERATORS HOME
-    ABSTRACT_PLAN_GENERATOR = join(PROJECT_PATH, "generator_labeler")
-    JOB_GENERATOR = join(PROJECT_PATH, "instantiator")
+    ABSTRACT_PLAN_GENERATOR = join(PROJECT_PATH, "abstract_generation")
+    JOB_GENERATOR = join(PROJECT_PATH, "instantiation")
 
     # Input workload the abstract plans are learned from, per DATA_MANAGER:
     # (folder, plan-file name filter, max plan depth, max joins); -1 = learned from the workload
     INPUT_WORKLOAD = {
-        "TPCH": ("data/input_workload_exec_plan/", "TPC_H", 6, 3),
-        "IMDB": ("data/input_workload_exec_plan/", "TPC_H", 6, 3),
-        "JOB": ("data/input_workload_exec_plan_job/", "JOB_", -1, -1),
+        "TPCH": ("input-workloads/tpch/", "TPC_H", 6, 3),
+        "IMDB": ("input-workloads/tpch/", "TPC_H", 6, 3),
+        "JOB": ("input-workloads/job/", "JOB_", -1, -1),
     }
 
     # Path to original exec plans
@@ -49,7 +49,8 @@ class CONFIG:
     ABSTRACT_PLAN_MAX_JOINS = INPUT_WORKLOAD[DATA_MANAGER][3]
 
     # Path of generated data destination
-    BASE_PATH = join(PROJECT_PATH, "data/")  # <absolute_path_to_input_data>
+    # Generated output: abstract plans, jobs, execution plans and labels of each experiment
+    BASE_PATH = join(PROJECT_PATH, "training-data/")
 
     EXPERIMENT_PATH = join(BASE_PATH, EXPERIMENT_ID + "/")
 

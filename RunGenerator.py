@@ -15,8 +15,8 @@ def generate_abstract_plans():
     import sys
     python_executable = sys.executable
     os.system(
-        f"cd {CONFIG.ABSTRACT_PLAN_GENERATOR}; "
-        f"{python_executable} NewAbstractExecutionPlanAnalyzer.py {CONFIG.N_JOBS} {CONFIG.ORIG_EXEC_PLAN_FOLDER} {CONFIG.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER} "
+        f"cd {CONFIG.PROJECT_PATH}; "
+        f"{python_executable} -m abstract_generation.generate_abstract_plans {CONFIG.N_JOBS} {CONFIG.ORIG_EXEC_PLAN_FOLDER} {CONFIG.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER} "
         f"{CONFIG.ORIG_EXEC_PLAN_FILTER} {CONFIG.ABSTRACT_PLAN_MAX_DEPTH} {CONFIG.ABSTRACT_PLAN_MAX_JOINS}"
     )
 
@@ -28,7 +28,7 @@ def generate_jobs():
     os.system(
         f"cd {CONFIG.JOB_GENERATOR}; "
         f"DATAFARM_SQLSERVER_TABLE_PREFIX='{CONFIG.SQLSERVER_TABLE_PREFIX}' "
-        f'sbt "runMain Generator.JobGenerator {CONFIG.N_JOBS} {CONFIG.N_VERSIONS} {CONFIG.DATA_MANAGER} {CONFIG.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER} {CONFIG.GENERATED_JOB_FOLDER} {CONFIG.JOB_SEED} {CONFIG.TARGET_PLATFORM}"'
+        f'sbt "runMain instantiation.JobGenerator {CONFIG.N_JOBS} {CONFIG.N_VERSIONS} {CONFIG.DATA_MANAGER} {CONFIG.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER} {CONFIG.GENERATED_JOB_FOLDER} {CONFIG.JOB_SEED} {CONFIG.TARGET_PLATFORM}"'
     )
 
 

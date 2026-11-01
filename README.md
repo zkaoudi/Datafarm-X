@@ -15,6 +15,7 @@ are therefore comparable across platforms, for example the same job as a Wayang 
 
 ## Contents
 - [Platforms and datasets](#platforms-and-datasets)
+- [Repository layout](#repository-layout)
 - [Requirements](#requirements)
 - [Quick start](#quick-start)
 - [Configuration](#configuration)
@@ -38,6 +39,24 @@ Choose the platform with `TARGET_PLATFORM` and the dataset with `DATA_MANAGER` i
 
 The `IMDB` data manager (the Kaggle IMDb dump) comes from the original DataFarm and supports Flink only.
 
+## Repository layout
+
+The folders follow the three components of DataFarm: abstract plan generation, instantiation and labeling. Abstract
+generation writes abstract plans as JSON files, which instantiation reads, so each side can change independently.
+
+| Folder | What it contains |
+|---|---|
+| `abstract_generation/` | **Abstract plan generation** (Python). `generate_abstract_plans.py` learns operator transitions from an input workload (`AbstractPlan.py`, `Node.py`, `ExecutionPlanTools.py`, `FeatureExtraction.py`) and writes abstract plans. `JOB_InputWorkload.py` builds the JOB input workload; `tpch_input_workload/` holds the Flink TPC-H query jobs whose execution plans form the TPC-H input workload (its own sbt project). |
+| `instantiation/` | **Instantiation** (Scala, sbt project). `instantiation.JobGenerator` turns abstract plans into jobs: `platform/{flink,wayang,spark,sql}` translates operators for each platform, `dataset/{tpch,job,imdb}` holds the schemas, joins, filters and statistics of each dataset. |
+| `labeling/` | **Label forecasting** (Python): features, job sampling, the quantile-forest model and the Flink task-manager client used by `RunLabelForecaster.py`. |
+| `datasets/` | Dataset metadata tools: TPC-H table cardinalities (`tpch/TableMetaData.py`), the JOB statistics analyzer (`job/`), IMDB (Kaggle) metadata (`imdb/`). |
+| `platforms/` | Tools to run generated jobs: `flink/BuildAndSubmit.py`, and `sql/` for loading data into SQL Server and running SQL jobs. Spark and Wayang jobs need no extra tooling. |
+| `input-workloads/` | The input workloads abstract plans are learned from: `tpch/` (Flink execution plans of TPC-H queries) and `job/` (one plan per JOB query). |
+| `training-data/` | **Output**, one folder per `EXPERIMENT_ID`: abstract plans, generated jobs, their execution plans and labels. Not tracked by git. |
+| `experiments/` | Scripts and configurations of the DataFarm paper's experiments; not used by the pipeline. |
+
+The entry points `RunGenerator.py` and `RunLabelForecaster.py` and the configuration `CONFIG.py` are at the top level.
+
 ## Requirements
 
 - **Generator:** sbt ≥ 1.3 with Scala 2.11, and Python 3.6–3.8 with the packages in `requirements.txt`
@@ -50,8 +69,8 @@ the default paths in `CONFIG.py` match that container.
 ## Quick start
 
 1. Edit `CONFIG.py` (see [Configuration](#configuration)): set the paths, `DATA_MANAGER` and `TARGET_PLATFORM`.
-2. Run `RunGenerator.py`. It learns abstract plans from the input workload of the chosen dataset and generates
-   `N_JOBS × N_VERSIONS` jobs in `data/<EXPERIMENT_ID>/generated_jobs/`, plus `generated_jobs_info.json` with the
+2. Run `python RunGenerator.py` from the repository root. It learns abstract plans from the input workload of the chosen dataset and generates
+   `N_JOBS × N_VERSIONS` jobs in `training-data/<EXPERIMENT_ID>/generated_jobs/`, plus `generated_jobs_info.json` with the
    metadata of every operator (tables, selectivities, cardinalities).
 3. Run the jobs on the platform (see its section), or label them with `RunLabelForecaster.py`
    (see [Labeling jobs](#labeling-jobs)).
@@ -75,8 +94,9 @@ Generator settings:
 - `TARGET_PLATFORM`: `"Flink"`, `"Wayang"`, `"Spark"`, `"SQL"`, `"SQLServer"` or `"SQLServerLTR"` (see the platform sections).
 - `INPUT_WORKLOAD`: per data manager, the folder of input execution plans, a file-name filter, and the maximum
   plan depth and number of joins (`-1` = learned from the workload).
-- `DATA_ID`: which entry of `TableMetaData.py` (TPC-H scale factor) to use for labeling features.
-- `EXPERIMENT_ID`: name of the folder in `data/` where the results are stored.
+- `DATA_ID`: which entry of `datasets/tpch/TableMetaData.py` (TPC-H scale factor) to use for labeling features.
+- `EXPERIMENT_ID`: name of the folder in `training-data/` where the generated abstract plans, jobs, execution plans
+  and labels are stored.
 - `SQLSERVER_TABLE_PREFIX`: table-name prefix for `SQLServerLTR`, e.g. `"tcph.dbo."` (empty = unqualified).
 
 Label forecaster settings are described in [Labeling jobs](#labeling-jobs).
@@ -94,7 +114,7 @@ sbt-assembly, `src/main/scala/JobXvY.scala`) using the Flink DataSet API.
 - **Running a job:**
   `JobXvY <data_path> <exec_plan_out_path> <exec|noexec> <local|nolocal> <heap_size> <parallelism>`.
   With `exec`, the job runs and writes `<exec_plan_out_path>/JobXvY$.json` with Flink's execution plan and the net
-  run time. `BuildAndSubmit.py` builds the projects with `sbt assembly` and submits them with `flink run`.
+  run time. `platforms/flink/BuildAndSubmit.py` builds the projects with `sbt assembly` and submits them with `flink run`.
 - **Datasets:** TPC-H (and IMDB from the original DataFarm).
 
 ### Wayang
@@ -119,7 +139,7 @@ filters or join order.
 - **Running a job:**
 
   ```bash
-  cd data/<EXPERIMENT_ID>/generated_jobs
+  cd training-data/<EXPERIMENT_ID>/generated_jobs
   sbt package
   spark-submit --class datafarm.generated.spark.Job0v0 target/scala-2.12/datafarm-spark-jobs_2.12-0.1.jar \
     /path/to/data/ [planOutputDir]
@@ -185,10 +205,10 @@ case-sensitive as on the other platforms (SQL Server's default collations are no
 
 ```bash
 # create the tables and load the data (BULK INSERT cannot read JOB's backslash-escaped CSVs)
-python sqlserver/load_sqlserver.py --dataset JOB --data /path/to/imdb --schema data/<EXPERIMENT_ID>/generated_jobs/schema.sql \
+python platforms/sql/load_sqlserver.py --dataset JOB --data /path/to/imdb --schema training-data/<EXPERIMENT_ID>/generated_jobs/schema.sql \
     --connection "DRIVER={ODBC Driver 18 for SQL Server};SERVER=…;DATABASE=…;UID=…;PWD=…;TrustServerCertificate=yes"
 # run all jobs of a folder (JobXvY.sql or JobXvY.txt), or save their estimated plans with --showplan <dir>
-python sqlserver/run_sql_jobs.py data/<EXPERIMENT_ID>/generated_jobs --output results.csv --connection "…"
+python platforms/sql/run_sql_jobs.py training-data/<EXPERIMENT_ID>/generated_jobs --output results.csv --connection "…"
 ```
 
 The connection string can also be set in the environment variable `DATAFARM_SQLSERVER`.
@@ -203,12 +223,12 @@ The connection string can also be set in the environment variable `DATAFARM_SQLS
 
 - **Data:** the `.tbl` files generated by TPC-H's dbgen (`|`-separated). A sample of about 1 GB is available
   [on Kaggle](https://www.kaggle.com/fven7u/tpch-1gb).
-- **Input workload:** `data/input_workload_exec_plan/`, Flink execution plans of TPC-H queries 1, 3, 11, 13, 17 and
+- **Input workload:** `input-workloads/tpch/`, Flink execution plans of TPC-H queries 1, 3, 11, 13, 17 and
   21 (hand-written and SQL versions). Generated plans have at most depth 6 and 3 joins (`INPUT_WORKLOAD` in
   `CONFIG.py`). You can add any execution plan extracted from Flink jobs.
 - **Metadata:** each table's join fields, filter fields with values and selectivities, and group-by fields with
   their number of distinct values are defined in the table managers
-  (`instantiator/src/main/scala/Generator/DatasetJob/tpc_h/table/`). `TableMetaData.py` holds the table
+  (`instantiation/src/main/scala/instantiation/dataset/tpch/`). `datasets/tpch/TableMetaData.py` holds the table
   cardinalities for scale factors 1, 5, 10 and 50 GB, which the label forecaster uses.
 
 ### Join Order Benchmark (JOB)
@@ -224,10 +244,10 @@ The connection string can also be set in the environment variable `DATAFARM_SQLS
 - **Filters:** the filters are taken from the JOB queries (e.g. `company_name.country_code = '[us]'`,
   `title.production_year > 2000`, `keyword.keyword in (...)`). Tables that JOB never filters directly
   (`aka_title`, `complete_cast`, `movie_keyword`, `movie_link`) get `id % m = 0` predicates. All of this lives in
-  `instantiator/src/main/resources/job/job_catalog.json`; edit it to add or remove predicates.
+  `instantiation/src/main/resources/job/job_catalog.json`; edit it to add or remove predicates.
 - **Input workload:** the abstract plans are learned from the JOB queries, not TPC-H.
-  `data/input_workload_exec_plan_job/` holds one plan per JOB query (113), built by
-  `generator_labeler/JOB_InputWorkload.py` from the query text in the style of a hand-written Flink DataSet job: per
+  `input-workloads/job/` holds one plan per JOB query (113), built by
+  `abstract_generation/JOB_InputWorkload.py` from the query text in the style of a hand-written Flink DataSet job: per
   table a source and, if filtered, a filter; a left-deep chain of joins; the `MIN(...)` aggregate as a reduce; a sink.
   These plans describe only the operator graph; they were not produced by running Flink. Plan depth and number of
   joins are learned from this workload, so generated jobs have 1 to about 16 joins, as in JOB. Tables are reused at
@@ -235,7 +255,7 @@ The connection string can also be set in the environment variable `DATAFARM_SQLS
 
   ```bash
   git clone https://github.com/gregrahn/join-order-benchmark
-  python generator_labeler/JOB_InputWorkload.py join-order-benchmark data/input_workload_exec_plan_job
+  python abstract_generation/JOB_InputWorkload.py join-order-benchmark input-workloads/job
   ```
 
 - **Statistics:** selectivities, distinct counts and table sizes depend on your IMDB snapshot. Only the values of the
@@ -243,7 +263,7 @@ The connection string can also be set in the environment variable `DATAFARM_SQLS
   measure it:
 
   ```bash
-  python generator_labeler/DatasetMetadata/JOB_MetaDataAnalyzer.py /path/to/imdb_csv_dir
+  python datasets/job/JOB_MetaDataAnalyzer.py /path/to/imdb_csv_dir
   ```
 
   This writes the measured values into the catalog. Use `--output` to write elsewhere, and point the generator to
@@ -273,8 +293,8 @@ quantile regression forest on their run times, and then repeatedly runs the jobs
 the model's uncertainty stops improving. The result is `final_dataset.csv` with measured or predicted run times for
 every job.
 
-It currently submits **Flink** jobs only (through `BuildAndSubmit.py` and a running Flink cluster). For the other
-platforms, run the jobs yourself: Spark jobs and `sqlserver/run_sql_jobs.py` report run times.
+It currently submits **Flink** jobs only (through `platforms/flink/BuildAndSubmit.py` and a running Flink cluster). For the other
+platforms, run the jobs yourself: Spark jobs and `platforms/sql/run_sql_jobs.py` report run times.
 
 Settings in `CONFIG.py`:
 
