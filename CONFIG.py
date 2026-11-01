@@ -21,8 +21,11 @@ class CONFIG:
     N_JOBS = 1
     N_VERSIONS = 1
     JOB_SEED = 42  # -1 | 0
-    DATA_MANAGER = "TPCH"  # "TPCH" | "IMDB" | "JOB" (JOB requires TARGET_PLATFORM = "Wayang", "Spark" or "SQL")
-    TARGET_PLATFORM = "Wayang"  # "Flink" | "Wayang" | "Spark" | "SQL" (Spark and SQL: TPCH and JOB)
+    DATA_MANAGER = "TPCH"  # "TPCH" | "IMDB" | "JOB" (JOB requires TARGET_PLATFORM = "Wayang", "Spark", "SQL" or "SQLServer")
+    TARGET_PLATFORM = "Wayang"  # "Flink" | "Wayang" | "Spark" | "SQL" | "SQLServer" | "SQLServerLTR"
+    # (Spark, SQL, SQLServer: TPCH and JOB; SQLServerLTR: TPCH only)
+    # SQLServerLTR: prefix of the table names in the generated queries, e.g. "tcph.dbo." ("" = unqualified)
+    SQLSERVER_TABLE_PREFIX = ""
     #################################################################
 
     # DATA GENERATORS HOME

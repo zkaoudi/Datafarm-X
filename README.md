@@ -59,8 +59,8 @@ DataFarm can be configured to generate datasets with different characteristics:
 - `N_JOBS` defines the number of diverse Abstract Plans that will be generated.
 - `N_VERSIONS` defined the number of versions that will be generated for each Abstract Plan.
 - `JOB_SEED` makes the generation process replicable with a seed of your choice. With -1, each job's seed is derived from its plan index (also deterministic); otherwise it is derived from `JOB_SEED` and the plan index, so different plans still get different tables, filters and group-by fields.
-- `DATA_MANAGER` specifies the database manager to be used: "TPCH" for TPC-H, "JOB" for the Join Order Benchmark on IMDB (Wayang, Spark or SQL, see [Join Order Benchmark (JOB)](#join-order-benchmark-job)).
-- `TARGET_PLATFORM` specifies the platform the jobs are generated for: "Flink", "Wayang", "Spark" (see [Spark jobs](#spark-jobs)) or "SQL" (see [SQL jobs](#sql-jobs)).
+- `DATA_MANAGER` specifies the database manager to be used: "TPCH" for TPC-H, "JOB" for the Join Order Benchmark on IMDB (Wayang, Spark, SQL or SQLServer, see [Join Order Benchmark (JOB)](#join-order-benchmark-job)).
+- `TARGET_PLATFORM` specifies the platform the jobs are generated for: "Flink", "Wayang", "Spark" (see [Spark jobs](#spark-jobs)), "SQL" (see [SQL jobs](#sql-jobs)), or "SQLServer" / "SQLServerLTR" (see [SQL Server jobs](#sql-server-jobs)).
 - `DATA_ID` specifies the id of the input data meta-data that has to be used by the system. The input data meta-data can be specified in `TableMetaData.py`.
 - `EXPERIMENT_ID` defines the id of the experiment. It will be the name of the folder where the results of the generation process will be stored.
 
@@ -185,4 +185,35 @@ sequences and filters as the Wayang, Flink and Spark jobs.
 - The dataflow jobs keep an arbitrary row per group, where SQL takes the per-column minimum. Jobs that join, filter or group
   the output of a group-by again can therefore give different result sizes on SQL than on the dataflow platforms
   (10 of 80 TPC-H jobs in our tests, none of the JOB jobs).
+
+## SQL Server jobs
+Two targets generate jobs for Microsoft SQL Server from the same plans:
+
+**`TARGET_PLATFORM = "SQLServer"`** (TPC-H and JOB) writes the [SQL jobs](#sql-jobs) in T-SQL: dates as
+`CAST('…' AS DATE)`, sorts inside a common table expression with `OFFSET 0 ROWS` (SQL Server rejects a plain
+`ORDER BY` there), and `[` escaped in LIKE patterns. Its `schema.sql` uses the column types of dbgen's `dss.ddl` and
+the primary keys of `dss.ri` for TPC-H, and for JOB the lengths of JOB's `schema.sql` as `NVARCHAR`, with a binary
+collation so text comparisons are case-sensitive as on the other platforms (SQL Server's default collations are not).
+
+**`TARGET_PLATFORM = "SQLServerLTR"`** (TPC-H only) writes flat queries for the learning-to-rank optimizer of
+[LTR_cross_hardwares](https://github.com/XLI-2020/LTR_cross_hardwares), in the format of its DataFarm port:
+`JobXvY.txt` holds the query (`SELECT … FROM t1, t2 WHERE … GROUP BY … ORDER BY …`) and `JobXvY.pickle` (written by
+`RunGenerator.py` from `JobXvY.json`) the same query as a dict with the keys `FROM`, `SELECT`, `WHERE`, `WHERE_JOIN`,
+`GROUP BY` and `ORDER BY`. Filters, joins and group-bys come from the plan; maps become columns or `COUNT`/`AVG`/`SUM`
+and sorts `ORDER BY` items, using that port's rules. Unlike that port, every query is valid SQL Server: no table occurs
+twice in `FROM` (the format has no aliases), and grouped queries select and sort only group columns and aggregates.
+Set `SQLSERVER_TABLE_PREFIX` in `CONFIG.py` (e.g. `"tcph.dbo."`) to qualify the table names. JOB is not supported:
+the format stores one column name per join, so `cast_info.movie_id = title.id` cannot be expressed.
+
+Loading data and running jobs (needs `pip install pyodbc` and an ODBC driver for SQL Server):
+
+```bash
+# create the tables and load the data (JOB's backslash-escaped CSVs cannot be read by BULK INSERT)
+python sqlserver/load_sqlserver.py --dataset JOB --data /path/to/imdb --schema data/<EXPERIMENT_ID>/generated_jobs/schema.sql \
+    --connection "DRIVER={ODBC Driver 18 for SQL Server};SERVER=…;DATABASE=…;UID=…;PWD=…;TrustServerCertificate=yes"
+# run all jobs of a folder (JobXvY.sql or JobXvY.txt), or save their estimated plans with --showplan <dir>
+python sqlserver/run_sql_jobs.py data/<EXPERIMENT_ID>/generated_jobs --output results.csv --connection "…"
+```
+
+The connection string can also be set in the environment variable `DATAFARM_SQLSERVER`.
 

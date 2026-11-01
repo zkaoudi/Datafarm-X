@@ -1,6 +1,6 @@
 package Generator.DatasetJob.job
 
-import Generator.DatasetJob.{AbstractSQLTableOperatorManager, AbstractSparkTableOperatorManager, AbstractTableOperatorManager, AbstractWayangTableOperatorManager, ParserCode}
+import Generator.DatasetJob.{AbstractSQLTableOperatorManager, AbstractSparkTableOperatorManager, AbstractTableOperatorManager, AbstractWayangTableOperatorManager, ParserCode, SQLDialect}
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 
@@ -192,6 +192,11 @@ class JOBSQLTableOperatorManager(@(JsonIgnore @param @field @getter) protected v
     sqlSortCode(inVarName, outVarName, table.columns(index - 1).name)
 
   override protected def jobFilterCode(inVarName: String, outVarName: String, p: JOBPredicate): String =
-    sqlFilterCode(inVarName, outVarName, p.sqlCondition)
+    sqlFilterCode(inVarName, outVarName, p.sqlCondition(sqlDialect))
+}
+
+/** JOB table as T-SQL for SQL Server. */
+class JOBSQLServerTableOperatorManager(t: JOBTable, s: JOBTableStats) extends JOBSQLTableOperatorManager(t, s) {
+  override def sqlDialect: SQLDialect = SQLDialect.SQLServer
 }
 

@@ -1,5 +1,8 @@
 from CONFIG import CONFIG
+import glob
+import json
 import os
+import pickle
 
 
 def generate_abstract_plans():
@@ -24,8 +27,20 @@ def generate_jobs():
 
     os.system(
         f"cd {CONFIG.JOB_GENERATOR}; "
+        f"DATAFARM_SQLSERVER_TABLE_PREFIX='{CONFIG.SQLSERVER_TABLE_PREFIX}' "
         f'sbt "runMain Generator.JobGenerator {CONFIG.N_JOBS} {CONFIG.N_VERSIONS} {CONFIG.DATA_MANAGER} {CONFIG.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER} {CONFIG.GENERATED_JOB_FOLDER} {CONFIG.JOB_SEED} {CONFIG.TARGET_PLATFORM}"'
     )
+
+
+def write_ltr_pickles(job_folder):
+    """SQLServerLTR: the dict of each JobXvY.json as JobXvY.pickle, the file the LTR featurizers load."""
+    files = [f for f in glob.glob(os.path.join(job_folder, "Job*v*.json"))]
+    for f in files:
+        with open(f) as fh:
+            query = json.load(fh)
+        with open(f[: -len(".json")] + ".pickle", "wb") as fh:
+            pickle.dump(query, fh)
+    print(f"|--> Wrote {len(files)} .pickle query descriptions for the LTR pipeline")
 
 
 def create_project_folders():
@@ -57,3 +72,6 @@ if __name__ == "__main__":
     print()
     print("|Job Generation")
     generate_jobs()
+
+    if CONFIG.TARGET_PLATFORM == "SQLServerLTR":
+        write_ltr_pickles(CONFIG.GENERATED_JOB_FOLDER)
