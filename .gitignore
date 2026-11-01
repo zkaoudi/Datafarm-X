@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+
+# generated workloads, jobs and labels (see CONFIG.BASE_PATH)
+/training-data/
+.DS_Store
+*.egg-info/
