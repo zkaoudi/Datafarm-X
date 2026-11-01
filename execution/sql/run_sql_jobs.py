@@ -7,7 +7,7 @@ job as JobXvY.xml instead of running it.
 
 Usage:
     pip install pyodbc
-    python platforms/sql/run_sql_jobs.py training-data/<EXPERIMENT_ID>/generated_jobs --output results.csv \\
+    python execution/sql/run_sql_jobs.py training-data/<EXPERIMENT_ID>/generated_jobs --output results.csv \\
         --connection "DRIVER={ODBC Driver 18 for SQL Server};SERVER=...;DATABASE=...;UID=...;PWD=...;TrustServerCertificate=yes"
 """
 import argparse

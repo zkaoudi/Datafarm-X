@@ -11,7 +11,7 @@ import seaborn as sns
 from labeling.PredictorFeatureExtraction import compute_cardinality_plan_features
 from labeling.JobExecutionSampler.unsupervised_sampler import UniformAgglomerativeSampler, RandomSampler
 from labeling.ActiveModel.ActiveQuantileForest import QuantileForestModel
-from platforms.flink import BuildAndSubmit
+from execution.flink import BuildAndSubmit
 from CONFIG import CONFIG
 
 

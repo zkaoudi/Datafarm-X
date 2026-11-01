@@ -8,7 +8,7 @@ backslash-escaped JOB files; for TPC-H, BULK INSERT (see the header of schema.sq
 
 Usage:
     pip install pyodbc
-    python platforms/sql/load_sqlserver.py --dataset JOB --data /path/to/imdb_csv \\
+    python execution/sql/load_sqlserver.py --dataset JOB --data /path/to/imdb_csv \\
         --connection "DRIVER={ODBC Driver 18 for SQL Server};SERVER=...;DATABASE=imdb;UID=...;PWD=...;TrustServerCertificate=yes" \\
         --schema training-data/<EXPERIMENT_ID>/generated_jobs/schema.sql
 

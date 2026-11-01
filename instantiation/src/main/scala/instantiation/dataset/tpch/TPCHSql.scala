@@ -115,7 +115,7 @@ object TPCHSql {
        |-- Load the .tbl files with BULK INSERT (paths as seen by the SQL Server process), e.g.
        |--   BULK INSERT lineitem FROM '/data/lineitem.tbl' WITH (FIELDTERMINATOR = '|', ROWTERMINATOR = '|\\n', TABLOCK);
        |-- or from any client with
-       |--   python platforms/sql/load_sqlserver.py --dataset TPCH --data <tbl_dir> --connection "<ODBC connection string>"
+       |--   python execution/sql/load_sqlserver.py --dataset TPCH --data <tbl_dir> --connection "<ODBC connection string>"
        |
        |${creates.mkString("\n\n")}
        |""".stripMargin

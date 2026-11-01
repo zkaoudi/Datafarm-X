@@ -199,7 +199,7 @@ object JOBSchema {
     }
     s"""-- IMDB tables of the Join Order Benchmark for SQL Server, used by the generated SQL jobs.
        |-- The JOB CSV files use backslash escapes, which BULK INSERT cannot read; load them with
-       |--   python platforms/sql/load_sqlserver.py --dataset JOB --data <imdb_csv_dir> --connection "<ODBC connection string>"
+       |--   python execution/sql/load_sqlserver.py --dataset JOB --data <imdb_csv_dir> --connection "<ODBC connection string>"
        |
        |${creates.mkString("\n\n")}
        |""".stripMargin
