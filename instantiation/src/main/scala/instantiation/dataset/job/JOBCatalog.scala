@@ -138,7 +138,7 @@ case class JOBTableStats(rows: Option[Long], distinct: Map[String, Long], filter
   *
   * The predicates are taken from the 113 JOB queries. Statistics that depend on the actual IMDB
   * snapshot are `null` in the shipped catalog and are filled in by
-  * `datasets/job/JOB_MetaDataAnalyzer.py`. Set the environment variable
+  * `datasets_metadata/job/JOB_MetaDataAnalyzer.py`. Set the environment variable
   * `DATAFARM_JOB_CATALOG` to use a catalog file other than the bundled resource.
   */
 object JOBCatalog {

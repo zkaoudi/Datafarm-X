@@ -1,5 +1,5 @@
 {
-  "about": "Filter predicates and statistics for generating Join Order Benchmark (JOB) jobs. Predicates are taken from the 113 JOB queries (jobQueries = number of queries using the predicate); 'mod' predicates are added for tables JOB never filters directly. selectivity = fraction of the table's rows that satisfy the predicate, distinct = number of distinct values of a group field, rows = table cardinality. Values that depend on the IMDB snapshot are null until datasets/job/JOB_MetaDataAnalyzer.py measures them; null selectivities are recorded as -1 in generated_jobs_info.json.",
+  "about": "Filter predicates and statistics for generating Join Order Benchmark (JOB) jobs. Predicates are taken from the 113 JOB queries (jobQueries = number of queries using the predicate); 'mod' predicates are added for tables JOB never filters directly. selectivity = fraction of the table's rows that satisfy the predicate, distinct = number of distinct values of a group field, rows = table cardinality. Values that depend on the IMDB snapshot are null until datasets_metadata/job/JOB_MetaDataAnalyzer.py measures them; null selectivities are recorded as -1 in generated_jobs_info.json.",
   "measuredOn": null,
   "tables": {
     "aka_name": {

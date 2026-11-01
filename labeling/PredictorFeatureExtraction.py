@@ -178,7 +178,7 @@ def remove_outliers(df, outlier_col, b=0.01, verbose=False):
 ###############################
 ## Data cardinality features ##
 ###############################
-from datasets.tpch.TableMetaData import data_cardinality
+from datasets_metadata.tpch.TableMetaData import data_cardinality
 
 
 def preprocess_jobs_data_info(path):
