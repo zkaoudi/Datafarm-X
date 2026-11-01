@@ -6,19 +6,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from datafarm.abstract_generation import ExecutionPlanTools as planTools  # noqa: E402
 from datafarm.abstract_generation.AbstractPlan import AbstactPlanGeneratorModel  # noqa: E402
-import seaborn as sns
-
-import sys
-
-sns.set_context("talk")
-sns.set_style("whitegrid")
-
-
-# experiment_version = "Experiment4/"
-
-# tmp_orig_exec_plan_folder = "/Users/researchuser7/IdeaProjects/flink-playground-jobs/out/original_execution_plans_local/0GB"
-# dest_folder = "/Users/researchuser7/IdeaProjects/flink-playground-jobs/out/Experiment4/generated_abstract_exec_plans/"
-# n_jobs_to_generate = 10
 
 
 def parse_args(args):
@@ -42,8 +29,6 @@ def parse_args(args):
 if __name__ == "__main__":
     params = parse_args(sys.argv)
 
-    print(os.getcwd())
-
     if not os.path.exists(params["genAbsPlanDest"]):
         raise Exception(
             f"Destination folder for genAbsPlanDest '{params['genAbsPlanDest']}' does not exists."
@@ -57,7 +42,7 @@ if __name__ == "__main__":
             f"No plans matching '{params['planFilter']}' in '{params['originalExecPlanSource']}'"
         )
 
-    print(exec_plans_json)
+    print(f"Learning from {len(exec_plans_json)} input plans; generating {params['nJobs']} abstract plans")
 
     exec_plans_graph = planTools.compute_graphs_from_plans(
         exec_plans_json, include_cycles=False

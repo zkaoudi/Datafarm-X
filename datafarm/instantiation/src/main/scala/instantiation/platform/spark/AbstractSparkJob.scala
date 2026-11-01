@@ -14,8 +14,8 @@ import java.nio.file.{Files, Paths}
   * Spark counterpart of the execution plans DataFarm stores for Flink jobs.
   *
   * The jobs parse their input themselves (object `<jobName>Parsers` in the same file), so they
-  * only need spark-core. `createProject` also writes a `build.sbt` next to the jobs, so the whole
-  * folder builds with `sbt package`.
+  * only need spark-core. `createProject` also writes a `build.sbt` (and `project/build.properties`) next to
+  * the jobs, so the whole folder builds with `sbt package`.
   *
   * @param parsers object name => Scala source of the parser object
   * @param dataset name of the dataset, for the generated comment
@@ -39,7 +39,10 @@ case class AbstractSparkJob(jobBody: String, jobName: String, parsers: String =>
     println(s"Saving Spark job file to $path")
     write(path.toString, filledBody)
     val sbt = Paths.get(projectPath, "build.sbt")
-    if (Files.notExists(sbt)) write(sbt.toString, filledSBT)
+    if (Files.notExists(sbt)) {
+      write(sbt.toString, filledSBT)
+      AbstractJob.writeBuildProperties(projectPath)
+    }
   }
 
   private def write(path: String, content: String): Unit = {

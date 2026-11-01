@@ -1,15 +1,16 @@
+"""Statistics of the TPC-H tables (filter value quantiles, distinct group-by values) for the job generator.
+
+Usage: python datafarm/datasets_metadata/tpch/MetaDataAnalyzer.py <dbgen output folder with the <table>.tbl files>
+"""
 import pandas as pd
 import numpy as np
+import argparse
 import sys
 import os as _os
 import sys as _sys
 _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))))  # repository root
 from datafarm.datasets_metadata.tpch import TableMetaData  # noqa: E402
 
-#data_source = "/Users/researchuser7/Desktop/tpc-test/sample_data/"
-data_source = "/Users/researchuser7/Desktop/tpc-test/db_out/"
-#lineitem_table = "sample_lineitem.tbl"
-lineitem_table = "lineitem.tbl"
 
 
 qs = [0.25, 0.5, 0.75]
@@ -18,12 +19,13 @@ qs = [0.25, 0.5, 0.75]
 def analyze_filter_field(ff, data_df):
     f_dict = {}
 
-    if data_df[ff].dtype == "datetime64[ns]":
-        f_df = data_df[ff].astype(np.int64).quantile(qs)
+    # dtype checks that also hold for pandas >= 3 (text columns are "str", dates may not be in ns)
+    if pd.api.types.is_datetime64_any_dtype(data_df[ff]):
+        f_df = data_df[ff].astype("datetime64[ns]").astype(np.int64).quantile(qs)
         f_dict["selectivity"] = [str(x) for x in f_df.index.values.tolist()]
         f_dict["values"] = [str(x) for x in pd.to_datetime(f_df).apply(lambda x: x.strftime("%Y-%m-%d")).values.tolist()]
 
-    elif data_df[ff].dtype == "object":
+    elif not pd.api.types.is_numeric_dtype(data_df[ff]):  # text
         f_df = (data_df.groupby(ff).size() / data_df.__len__())
         f_dict["selectivity"] = [str(x) for x in f_df.values.tolist()]
         f_dict["values"] = [str(x) for x in f_df.index.values.tolist()]
@@ -52,14 +54,14 @@ def toScala(s):
     return s
 
 
-def main():
+def main(data_source):
     db_meta_dict = TableMetaData.database_meta
 
     for table_n, table_info_dict in db_meta_dict.items():
         print(f"| Analyzing '{table_n}'")
 
-        data_df = pd.read_csv(data_source + table_n + ".tbl", sep="|", header=None, names=table_info_dict["fields"],
-                              parse_dates=table_info_dict["date_fields"], infer_datetime_format=True)
+        data_df = pd.read_csv(_os.path.join(data_source, table_n + ".tbl"), sep="|", header=None, names=table_info_dict["fields"], index_col=False,
+                              parse_dates=table_info_dict["date_fields"])
 
         print(data_df.info())
 
@@ -88,8 +90,7 @@ def main():
 
 
 if __name__ == '__main__':
-
-    main()
-
-
-
+    ap = argparse.ArgumentParser(description="Print the filter and group-by statistics of the TPC-H tables, as Scala maps "
+                                             "for the table operator managers of the job generator.")
+    ap.add_argument("data", help="dbgen output folder with the <table>.tbl files")
+    main(ap.parse_args().data)

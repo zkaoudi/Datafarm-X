@@ -2,11 +2,27 @@ import os
 import sys
 import json
 import networkx as nx
-from networkx.drawing.nx_agraph import graphviz_layout
-
-import matplotlib.pyplot as plt
 
 from datafarm.abstract_generation.Node import NodeOp
+
+
+def _plotting(to_file=False):
+    """matplotlib and the graphviz layout, imported only when a plan is drawn (optional dependencies)."""
+    if to_file:
+        import matplotlib
+        matplotlib.use("Agg")  # no display needed to save a PDF
+    import matplotlib.pyplot as plt
+    from networkx.drawing.nx_agraph import graphviz_layout
+    try:
+        import seaborn as sns
+        sns.set_context("talk")
+        sns.set_style("whitegrid")
+    except ImportError:
+        pass
+    return plt, graphviz_layout
+
+
+_plot_warning_shown = False
 
 
 def load_exec_plans(plan_folder):
@@ -102,6 +118,7 @@ def compute_graphs_from_plans(exec_plans, include_cycles=True):
 
 
 def show_exec_plan_graph(pg):
+    plt, graphviz_layout = _plotting()
     fig, ax = plt.subplots(1, 1, figsize=(8, 5), dpi=110)
     nx.draw(
         pg,
@@ -118,6 +135,7 @@ def show_exec_plan_graph(pg):
 
 
 def _show_generated_exec_plan_graph(pg):
+    plt, graphviz_layout = _plotting()
     fig, ax = plt.subplots(1, 1, figsize=(8, 5), dpi=110)
     nx.draw(
         pg,
@@ -132,24 +150,33 @@ def _show_generated_exec_plan_graph(pg):
 
 
 def show_generated_exec_plan_graph(pg):
-    ax = _show_generated_exec_plan_graph(pg)
+    plt, _ = _plotting()
+    _show_generated_exec_plan_graph(pg)
     plt.show()
     plt.close()
 
 
 def save_generated_exec_plan_graph(pg, dest_folder, save_graph_plot=True):
-    data1 = nx.json_graph.node_link_data(pg)
+    try:
+        data1 = nx.json_graph.node_link_data(pg, edges="links")  # networkx >= 3.4 (3.6 changed the default key)
+    except TypeError:
+        data1 = nx.json_graph.node_link_data(pg)  # older networkx: "links"
 
     with open(os.path.join(dest_folder, f'{pg.graph["plan_id"]}.json'), "w") as fp:
         json.dump(data1, fp)
-    print(data1)
 
     if save_graph_plot:
+        # a PDF drawing of the plan, if matplotlib and pygraphviz are installed
+        global _plot_warning_shown
+        plt = None
         try:
-            ax = _show_generated_exec_plan_graph(pg)
-            # ax.set_title(f'{pg.graph["plan_id"]}')
+            plt, _ = _plotting(to_file=True)
+            _show_generated_exec_plan_graph(pg)  # pygraphviz is imported here, by the layout
             plt.savefig(os.path.join(dest_folder, f'{pg.graph["plan_id"]}.pdf'))
-        except ImportError as e:
-            print(f"Warning: Could not save graph plot: {e}")
-            plt.close()
-        plt.close()
+        except Exception as e:  # the drawing is optional: never stop the generation for it
+            if not _plot_warning_shown:
+                print(f"Note: not drawing plan PDFs ({e}); install matplotlib and pygraphviz to get them.")
+                _plot_warning_shown = True
+        finally:
+            if plt is not None:
+                plt.close("all")

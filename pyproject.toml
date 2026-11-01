@@ -4,18 +4,28 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "datafarm-x"
-version = "0.1.0"
-description = "DataFarm training-data generator for Flink, Apache Wayang, Spark, SQL and SQL Server over TPC-H and JOB"
+version = "1.0.0"
+description = "Generate realistic jobs and queries for Flink, Apache Wayang, Spark, SQL and SQL Server over TPC-H and JOB, as training data for ML-based data management"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.7"
-dynamic = ["dependencies"]
+requires-python = ">=3.8"
+# what generating jobs needs; see requirements-labeling.txt for labeling
+dependencies = ["numpy>=1.19", "pandas>=1.0", "networkx>=2.4"]
+keywords = ["training data", "workload generation", "learned cost models", "query optimization", "benchmark", "TPC-H", "JOB"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Topic :: Database",
+]
+
+[project.optional-dependencies]
+# PDF drawings of the abstract plans (pygraphviz needs the graphviz system package)
+plots = ["matplotlib", "pygraphviz"]
+# running SQL Server jobs and loading data (datafarm/execution/sql)
+sqlserver = ["pyodbc"]
 
 [project.urls]
 Repository = "https://github.com/zkaoudi/Datafarm-X"
-
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
 
 # Only the Python code is installed; the Scala instantiation project, input workloads and
 # experiments stay in the clone (run the pipeline from there with RunGenerator.py).

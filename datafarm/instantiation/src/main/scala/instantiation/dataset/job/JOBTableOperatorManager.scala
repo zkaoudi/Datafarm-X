@@ -89,7 +89,7 @@ trait JOBTableLogic extends AbstractTableOperatorManager {
   override def filterCode(inVarName: String, outVarName: String, fieldSeed: Int = 0, valueSeed: Int = 0): (String, Double) = {
     val p = predicates(Math.floorMod(fieldSeed, predicates.size))
     if (p.selectivity.isEmpty)
-      println(s"WARN - no selectivity for '${p.sql}' in the JOB catalog; recording -1.0 (run JOB_MetaDataAnalyzer.py)")
+      println(s"WARN - no selectivity for '${p.sql}' in the JOB catalog; recording -1.0 (run datafarm/datasets_metadata/job/MetaDataAnalyzer.py)")
     (jobFilterCode(inVarName, outVarName, p), p.selectivity.getOrElse(-1.0))
   }
 
@@ -185,7 +185,7 @@ class JOBSQLTableOperatorManager(@(JsonIgnore @param @field @getter) protected v
   protected def jobSourceCode(outVarName: String, file: String, parser: String, name: String): String =
     sqlCte(outVarName, s"SELECT * FROM $name")
 
-  /** NULL text keys are grouped together with "", as in the dataflow jobs (and in JOB_MetaDataAnalyzer's counts). */
+  /** NULL text keys are grouped together with "", as in the dataflow jobs (and in datafarm/datasets_metadata/job/MetaDataAnalyzer.py's counts). */
   protected def jobKeyedReduceCode(inVarName: String, outVarName: String, field: String): String = {
     val c = table.column(field)
     val keyExpr = if (!c.isInt && c.nullable) s"COALESCE($field, '')" else field
