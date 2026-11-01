@@ -143,6 +143,68 @@ object JOBSchema {
 
   val byName: Map[String, JOBTable] = tables.map(t => t.name -> t).toMap
 
+  /** Lengths of the `character varying(n)` columns in JOB's schema.sql; all other text columns are `text`. */
+  val varcharLength: Map[(String, String), Int] = Map(
+    ("aka_name", "imdb_index") -> 12,
+    ("aka_name", "name_pcode_cf") -> 5,
+    ("aka_name", "name_pcode_nf") -> 5,
+    ("aka_name", "surname_pcode") -> 5,
+    ("aka_name", "md5sum") -> 32,
+    ("aka_title", "imdb_index") -> 12,
+    ("aka_title", "phonetic_code") -> 5,
+    ("aka_title", "md5sum") -> 32,
+    ("char_name", "imdb_index") -> 12,
+    ("char_name", "name_pcode_nf") -> 5,
+    ("char_name", "surname_pcode") -> 5,
+    ("char_name", "md5sum") -> 32,
+    ("comp_cast_type", "kind") -> 32,
+    ("company_name", "country_code") -> 255,
+    ("company_name", "name_pcode_nf") -> 5,
+    ("company_name", "name_pcode_sf") -> 5,
+    ("company_name", "md5sum") -> 32,
+    ("company_type", "kind") -> 32,
+    ("info_type", "info") -> 32,
+    ("keyword", "phonetic_code") -> 5,
+    ("kind_type", "kind") -> 15,
+    ("link_type", "link") -> 32,
+    ("name", "imdb_index") -> 12,
+    ("name", "gender") -> 1,
+    ("name", "name_pcode_cf") -> 5,
+    ("name", "name_pcode_nf") -> 5,
+    ("name", "surname_pcode") -> 5,
+    ("name", "md5sum") -> 32,
+    ("role_type", "role") -> 32,
+    ("title", "imdb_index") -> 12,
+    ("title", "phonetic_code") -> 5,
+    ("title", "series_years") -> 49,
+    ("title", "md5sum") -> 32
+  )
+
+  /**
+    * `CREATE TABLE` statements for SQL Server: `INT`, and `NVARCHAR(n)` / `NVARCHAR(MAX)` for JOB's
+    * `character varying(n)` / `text` (IMDB names are Unicode). Text columns use a binary collation,
+    * so comparisons, LIKE and MIN are case-sensitive and ordered by code point, as in the generated
+    * dataflow jobs (SQL Server's default collations are case-insensitive: '%man%' would match 'Man').
+    */
+  def ddlSQLServer: String = {
+    val creates = tables.map { t =>
+      val cols = t.columns.map { c =>
+        val tp =
+          if (c.isInt) "INT"
+          else s"NVARCHAR(${varcharLength.get((t.name, c.name)).map(_.toString).getOrElse("MAX")}) COLLATE Latin1_General_100_BIN2"
+        val constraint = if (c.name == "id") " NOT NULL PRIMARY KEY" else if (!c.nullable) " NOT NULL" else ""
+        s"    ${c.name} $tp$constraint"
+      }
+      s"CREATE TABLE ${t.name} (\n${cols.mkString(",\n")}\n);"
+    }
+    s"""-- IMDB tables of the Join Order Benchmark for SQL Server, used by the generated SQL jobs.
+       |-- The JOB CSV files use backslash escapes, which BULK INSERT cannot read; load them with
+       |--   python sqlserver/load_sqlserver.py --dataset JOB --data <imdb_csv_dir> --connection "<ODBC connection string>"
+       |
+       |${creates.mkString("\n\n")}
+       |""".stripMargin
+  }
+
   /** `CREATE TABLE` statements as in JOB's schema.sql (integer / text columns, NOT NULL as there). */
   def ddl: String = {
     val creates = tables.map { t =>

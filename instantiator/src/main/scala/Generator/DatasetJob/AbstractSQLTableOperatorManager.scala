@@ -17,11 +17,15 @@ import Generator.DatasetJob.utils.getElementBySeed
   *  - Sort-Partition: `SELECT * FROM in ORDER BY column`
   *  - Map, Partition: pass-through (`SELECT * FROM in`); their UDF cost has no SQL counterpart
   *
-  * Only standard SQL is used (tested with PostgreSQL and DuckDB). Columns are named by [[sqlColumn]].
+  * The SQL follows [[sqlDialect]]: standard SQL by default (tested with PostgreSQL and DuckDB), or
+  * T-SQL for SQL Server. Columns are named by [[sqlColumn]].
   */
 trait AbstractSQLTableOperatorManager extends AbstractTableOperatorManager {
 
   // ---- building blocks (also used by dataset-specific managers) -----------------------------
+
+  /** The SQL dialect to generate (a def, so it is not part of the job info JSON). */
+  def sqlDialect: SQLDialect = SQLDialect.Standard
 
   /** SQL table name. */
   def sqlTable: String = tableName
@@ -48,7 +52,7 @@ trait AbstractSQLTableOperatorManager extends AbstractTableOperatorManager {
     sqlCte(outVarName, s"SELECT ${sqlColumns.map(c => s"MIN($c) AS $c").mkString(", ")} FROM $inVarName HAVING COUNT(*) > 0")
 
   def sqlSortCode(inVarName: String, outVarName: String, column: String): String =
-    sqlCte(outVarName, s"SELECT * FROM $inVarName ORDER BY $column")
+    sqlCte(outVarName, s"SELECT * FROM $inVarName ${sqlDialect.orderByInCte(column)}")
 
   private def fieldName(index: String): String =
     fields.find(_._2 == index).map(_._1).getOrElse(throw new Exception(s"No field at position $index in table '$tableName'"))
@@ -64,7 +68,7 @@ trait AbstractSQLTableOperatorManager extends AbstractTableOperatorManager {
   override def buildFilterCode(inVarName: String, outVarName: String, filterField: String, filterValue: String, filterOp: String = "<="): String = {
     val column = sqlColumn(fieldName(filterField))
     val value = filterValue.trim match {
-      case AbstractTableOperatorManager.ParseDate(date) => s"DATE '$date'"
+      case AbstractTableOperatorManager.ParseDate(date) => sqlDialect.dateLiteral(date)
       case v if v.startsWith("\"") && v.endsWith("\"") => "'" + v.substring(1, v.length - 1).replace("'", "''") + "'"
       case v => v
     }

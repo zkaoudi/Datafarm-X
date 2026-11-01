@@ -1,8 +1,8 @@
 package Generator.DatasetJob.tpc_h.table
 
-import Generator.{AbstractJob, AbstractSQLJob, AbstractSparkJob}
-import Generator.DatasetJob.{AbstractDatasetOperatorManager, AbstractSparkTableOperatorManager, AbstractTableOperatorManager, AbstractWayangTableOperatorManager}
-import Generator.DatasetJob.tpc_h.{TPCHParsers, TPCHSql, TPCHSqlNaming}
+import Generator.{AbstractJob, AbstractSQLJob, AbstractSQLServerLTRJob, AbstractSparkJob}
+import Generator.DatasetJob.{AbstractDatasetOperatorManager, AbstractSparkTableOperatorManager, AbstractTableOperatorManager, AbstractWayangTableOperatorManager, JoinRelation, SQLServerSQL}
+import Generator.DatasetJob.tpc_h.{TPCHParsers, TPCHSQLServerLTR, TPCHSql, TPCHSqlNaming}
 
 import scala.collection.mutable
 import scala.util.Random
@@ -65,6 +65,30 @@ class TPCHDatasetOperatorManager extends AbstractDatasetOperatorManager {
           case _ => throw new Exception(s"Can not find table operator manager for table '$s' ")
        }
     }
+    case "SQLServer" => {
+       s match {
+          case "lineitem" => new LineitemOperatorManager with TPCHSqlNaming with SQLServerSQL
+          case "orders" => new OrdersOperatorManager with TPCHSqlNaming with SQLServerSQL
+          case "customer" => new CustomerOperatorManager with TPCHSqlNaming with SQLServerSQL
+          case "partsupp" => new PartsuppOperatorManager with TPCHSqlNaming with SQLServerSQL
+          case "part" => new PartOperatorManager with TPCHSqlNaming with SQLServerSQL
+          case "supplier" => new SupplierOperatorManager with TPCHSqlNaming with SQLServerSQL
+          case "nation" => new NationOperatorManager with TPCHSqlNaming with SQLServerSQL
+          case _ => throw new Exception(s"Can not find table operator manager for table '$s' ")
+       }
+    }
+    case "SQLServerLTR" => {
+       s match {
+          case "lineitem" => new LineitemOperatorManager with TPCHSQLServerLTR
+          case "orders" => new OrdersOperatorManager with TPCHSQLServerLTR
+          case "customer" => new CustomerOperatorManager with TPCHSQLServerLTR
+          case "partsupp" => new PartsuppOperatorManager with TPCHSQLServerLTR
+          case "part" => new PartOperatorManager with TPCHSQLServerLTR
+          case "supplier" => new SupplierOperatorManager with TPCHSQLServerLTR
+          case "nation" => new NationOperatorManager with TPCHSQLServerLTR
+          case _ => throw new Exception(s"Can not find table operator manager for table '$s' ")
+       }
+    }
     case _ => { 
       s match {
           case "lineitem" => LineitemOperatorManager()
@@ -82,9 +106,22 @@ class TPCHDatasetOperatorManager extends AbstractDatasetOperatorManager {
   override def sparkJob(jobBody: String, jobName: String, tables: Seq[AbstractTableOperatorManager]): AbstractJob =
     AbstractSparkJob(jobBody, jobName, obj => TPCHParsers.code(obj, tables), "TPC-H")
 
+  /**
+    * For SQLServerLTR every table may occur only once (the LTR query format has no aliases), so the
+    * join sequence is drawn again from other seeds until its tables are distinct.
+    */
+  override def getSourceTableSequence(nJoins: Int, seed: Int = 0): (Seq[AbstractTableOperatorManager], Seq[JoinRelation]) =
+    if (platform != "SQLServerLTR") super.getSourceTableSequence(nJoins, seed)
+    else (0 until 1000).iterator
+      .map(i => scala.util.Try(super.getSourceTableSequence(nJoins, seed + 1000 * i)).toOption)
+      .collectFirst { case Some((ts, js)) if ts.map(_.tableName).distinct.size == ts.size => (ts, js) }
+      .getOrElse(throw new Exception(s"No sequence of $nJoins joins over distinct TPC-H tables (required by SQLServerLTR)"))
+
   override def sqlJob(jobBody: String, jobName: String, tables: Seq[AbstractTableOperatorManager]): AbstractJob = {
+    if (platform == "SQLServerLTR") return AbstractSQLServerLTRJob(jobBody, jobName)
     val all = (this.tables :+ "nation").map(t => getTableOperatorManager(t, "SQL"))
-    AbstractSQLJob(jobBody, jobName, "TPC-H", TPCHSql.ddl(all))
+    if (platform == "SQLServer") AbstractSQLJob(jobBody, jobName, "TPC-H (SQL Server)", TPCHSql.ddlSQLServer(all))
+    else AbstractSQLJob(jobBody, jobName, "TPC-H", TPCHSql.ddl(all))
   }
 
   def main(args: Array[String]): Unit = {

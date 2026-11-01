@@ -11,8 +11,9 @@ import Generator.DatasetJob.{AbstractDatasetOperatorManager, AbstractTableOperat
   */
 class JOBDatasetOperatorManager(targetPlatform: String) extends AbstractDatasetOperatorManager {
 
-  if (!Seq("Wayang", "Spark", "SQL").contains(targetPlatform))
-    throw new Exception(s"""DATA_MANAGER "JOB" supports TARGET_PLATFORM "Wayang", "Spark" and "SQL" (got "$targetPlatform").""")
+  if (!Seq("Wayang", "Spark", "SQL", "SQLServer").contains(targetPlatform))
+    throw new Exception(s"""DATA_MANAGER "JOB" supports TARGET_PLATFORM "Wayang", "Spark", "SQL" and "SQLServer" (got "$targetPlatform").""" +
+      (if (targetPlatform == "SQLServerLTR") " SQLServerLTR is TPC-H only: the LTR query format cannot express JOB joins between differently named columns (e.g. cast_info.movie_id = title.id)." else ""))
 
   platform = targetPlatform
 
@@ -23,6 +24,7 @@ class JOBDatasetOperatorManager(targetPlatform: String) extends AbstractDatasetO
   def getTableOperatorManager(s: String, p: String): AbstractTableOperatorManager = p match {
     case "Spark" => new JOBSparkTableOperatorManager(JOBSchema.table(s), catalog(s))
     case "SQL" => new JOBSQLTableOperatorManager(JOBSchema.table(s), catalog(s))
+    case "SQLServer" => new JOBSQLServerTableOperatorManager(JOBSchema.table(s), catalog(s))
     case _ => new JOBWayangTableOperatorManager(JOBSchema.table(s), catalog(s))
   }
 
@@ -35,7 +37,8 @@ class JOBDatasetOperatorManager(targetPlatform: String) extends AbstractDatasetO
   }
 
   override def sqlJob(jobBody: String, jobName: String, tables: Seq[AbstractTableOperatorManager]): AbstractJob =
-    AbstractSQLJob(jobBody, jobName, "JOB", JOBSchema.ddl)
+    if (platform == "SQLServer") AbstractSQLJob(jobBody, jobName, "JOB (SQL Server)", JOBSchema.ddlSQLServer)
+    else AbstractSQLJob(jobBody, jobName, "JOB", JOBSchema.ddl)
 
   /**
     * Join sequence for `nJoins` joins: a walk over the JOB join graph where each join starts from

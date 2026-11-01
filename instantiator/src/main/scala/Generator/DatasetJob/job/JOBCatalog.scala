@@ -83,14 +83,17 @@ case class JOBPredicate(table: String, field: String, op: String, values: Seq[St
     * Standard SQL condition on the bare column, e.g. `production_year > 2000`. SQL's NULL semantics
     * match the generated dataflow code (NULL never satisfies a predicate except `is null`).
     */
-  def sqlCondition: String = op match {
+  def sqlCondition: String = sqlCondition(Generator.DatasetJob.SQLDialect.Standard)
+
+  /** [[sqlCondition]] in the given SQL dialect (only LIKE patterns differ). */
+  def sqlCondition(dialect: Generator.DatasetJob.SQLDialect): String = op match {
     case "is null" => s"$field IS NULL"
     case "is not null" => s"$field IS NOT NULL"
     case "between" => s"$field BETWEEN ${q(values(0))} AND ${q(values(1))}"
     case "in" => s"$field IN (${values.map(q).mkString(", ")})"
     case "mod" => s"$field % ${values(0)} = ${values(1)}"
-    case "like" => s"$field LIKE ${q(values.head)}"
-    case "not like" => s"$field NOT LIKE ${q(values.head)}"
+    case "like" => s"$field LIKE ${q(dialect.likePattern(values.head))}"
+    case "not like" => s"$field NOT LIKE ${q(dialect.likePattern(values.head))}"
     case "!=" => s"$field <> ${q(values.head)}"
     case _ => s"$field $op ${q(values.head)}"
   }
