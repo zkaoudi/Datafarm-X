@@ -23,7 +23,8 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))  # repository root
-from datafarm.datasets_metadata.job import MetaDataAnalyzer as JOB  # noqa: E402  (CSV parsing and column types of the JOB tables)
+from datafarm.datasets_metadata.job import MetaDataAnalyzer as JOB  # noqa: E402  (CSV parsing of the JOB tables)
+from datafarm.datasets_metadata.job.TableMetaData import SCHEMA as JOB_SCHEMA  # noqa: E402  (their column types)
 
 TPCH_TABLES = ["region", "nation", "supplier", "customer", "part", "partsupp", "orders", "lineitem"]
 
@@ -39,7 +40,7 @@ def tpch_rows(path):
 
 
 def job_rows(path, table):
-    cols = JOB.SCHEMA[table]
+    cols = JOB_SCHEMA[table]
     with open(path, encoding="utf-8", errors="replace", newline=None) as fh:
         for line in fh:
             if line.endswith("\n"):
@@ -61,7 +62,7 @@ def create_tables(conn, schema_path):
 def load(conn, dataset, data_dir, tables=None, batch=10000, fast=True, truncate=False, log=print):
     """Insert the files of `dataset` from `data_dir` through a DB-API connection with '?' parameters."""
     if dataset == "JOB":
-        tables = tables or sorted(JOB.SCHEMA)
+        tables = tables or sorted(JOB_SCHEMA)
         files = {t: os.path.join(data_dir, t + ".csv") for t in tables}
     else:
         tables = tables or [t for t in TPCH_TABLES if os.path.exists(os.path.join(data_dir, t + ".tbl"))]
