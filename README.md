@@ -95,14 +95,14 @@ label them with run times, see [Labeling jobs](#labeling-jobs) (optional).
 
 | Option | Meaning | Default |
 |---|---|---|
-| `--platform` | `Flink`, `Wayang`, `Spark`, `SQL`, `SQLServer` or `SQLServerLTR` ([which datasets each supports](#platforms-and-datasets)) | `SQL` |
+| `--platform` | `Flink`, `Wayang`, `Spark`, `SQL`, `SQLServer` or `SQLServerFlat` ([which datasets each supports](#platforms-and-datasets)) | `SQL` |
 | `--dataset` | `TPCH`, `JOB` or `IMDB` | `TPCH` |
 | `--plans` | number of abstract plans learned from the dataset's input workload | 10 |
 | `--versions` | jobs per abstract plan, each with different tables, filters and group-by fields; total = plans × versions | 2 |
 | `--seed` | the same seed gives the same jobs. The seed of each job is derived from it and the plan index, so different plans still differ; `-1` derives it from the plan index only (also deterministic) | 42 |
 | `--experiment` | name of the output folder | `<platform>_<dataset>` |
 | `--output` | folder in which the experiment folder is created | `training-data/` |
-| `--table-prefix` | `SQLServerLTR` only: prefix of the table names, e.g. `tpch.dbo.` | none |
+| `--table-prefix` | `SQLServerFlat` only: prefix of the table names, e.g. `tpch.dbo.` | none |
 
 For a given seed, all platforms get the same jobs: run the same command with another `--platform` to get the same
 workload as, say, Wayang plans or Spark programs. The defaults of these options, and the settings of the label
@@ -130,7 +130,7 @@ Choose the platform with `--platform` and the dataset with `--dataset` (`TARGET_
 | `Spark` | `JobXvY.scala` (RDD API) and a `build.sbt` | ✓ | ✓ |
 | `SQL` | `JobXvY.sql` (standard SQL) and `schema.sql` | ✓ | ✓ |
 | `SQLServer` | `JobXvY.sql` (T-SQL) and `schema.sql` | ✓ | ✓ |
-| `SQLServerLTR` | `JobXvY.txt` and `JobXvY.pickle` (flat queries for an LTR optimizer) | ✓ | |
+| `SQLServerFlat` | `JobXvY.txt` (flat T-SQL, no CTEs), with `JobXvY.json` and `JobXvY.pickle` describing each query | ✓ | |
 
 The `IMDB` dataset (the Kaggle IMDb dump) comes from the original DataFarm and supports Flink only.
 
@@ -242,15 +242,15 @@ Its `schema.sql` uses, for TPC-H, the column types of dbgen's `dss.ddl` and the 
 it uses the lengths of JOB's `schema.sql` as `NVARCHAR`, with a binary collation, so text comparisons are
 case-sensitive as on the other platforms (SQL Server's default collations are not).
 
-**`--platform SQLServerLTR`** (TPC-H only) writes flat queries for the learning-to-rank optimizer of
-[LTR_cross_hardwares](https://github.com/XLI-2020/LTR_cross_hardwares), in the format of its DataFarm port:
+**`--platform SQLServerFlat`** (TPC-H only) writes each job as one flat query, without CTEs, together with a
+structured description of it:
 
 - `JobXvY.txt` holds the query (`SELECT … FROM t1, t2 WHERE … GROUP BY … ORDER BY …`).
 - `JobXvY.pickle`, written by `RunGenerator.py` from `JobXvY.json`, holds the same query as a dict with the keys
   `FROM`, `SELECT`, `WHERE`, `WHERE_JOIN`, `GROUP BY` and `ORDER BY`.
 - Filters, joins and group-bys come from the plan. Maps become columns or `COUNT`/`AVG`/`SUM`, and sorts become
-  `ORDER BY` items, using that port's rules.
-- Unlike that port, every query is valid SQL Server: no table occurs twice in `FROM` (the format has no aliases),
+  `ORDER BY` items.
+- Every query is valid SQL Server: no table occurs twice in `FROM` (the format has no aliases),
   and grouped queries select and sort only group columns and aggregates.
 - Pass `--table-prefix` (e.g. `--table-prefix tpch.dbo.`) to qualify the table names.
 - JOB is not supported: the format stores one column name per join, so `cast_info.movie_id = title.id` cannot be

@@ -34,7 +34,7 @@ jobs:
       - name: Generate jobs for every platform and dataset
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
-          for combo in TPCH:Flink TPCH:Wayang TPCH:Spark TPCH:SQL TPCH:SQLServer TPCH:SQLServerLTR \
+          for combo in TPCH:Flink TPCH:Wayang TPCH:Spark TPCH:SQL TPCH:SQLServer TPCH:SQLServerFlat \
                        JOB:Wayang JOB:Spark JOB:SQL JOB:SQLServer; do
             dataset=${combo%%:*}; platform=${combo#*:}
             echo "::group::$platform on $dataset"

@@ -22,6 +22,6 @@ What `generated_jobs/` contains depends on the platform:
 | `Wayang` | `JobNvM.scala` |
 | `Spark` | `JobNvM.scala`, plus `build.sbt` to build them all with `sbt package` |
 | `SQL`, `SQLServer` | `JobNvM.sql`, plus `schema.sql` with the tables |
-| `SQLServerLTR` | `JobNvM.txt` (query), `JobNvM.json` and `JobNvM.pickle` (its description) |
+| `SQLServerFlat` | `JobNvM.txt` (query), `JobNvM.json` and `JobNvM.pickle` (its description) |
 
 See the main [README](../README.md) for the options and for how to run the jobs of each platform.

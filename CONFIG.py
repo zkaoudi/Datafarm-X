@@ -25,8 +25,8 @@ class CONFIG:
     N_VERSIONS = 2  # jobs per abstract plan (different tables, filters, group-by fields): N_JOBS * N_VERSIONS jobs
     JOB_SEED = 42  # fixed seed = reproducible jobs; -1 = seed from the plan index only
     DATA_MANAGER = "TPCH"  # "TPCH" | "JOB" | "IMDB"
-    TARGET_PLATFORM = "SQL"  # "Flink" | "Wayang" | "Spark" | "SQL" | "SQLServer" | "SQLServerLTR"
-    # SQLServerLTR: prefix of the table names in the generated queries, e.g. "tcph.dbo." ("" = unqualified)
+    TARGET_PLATFORM = "SQL"  # "Flink" | "Wayang" | "Spark" | "SQL" | "SQLServer" | "SQLServerFlat"
+    # SQLServerFlat: prefix of the table names in the generated queries, e.g. "tpch.dbo." ("" = unqualified)
     SQLSERVER_TABLE_PREFIX = ""
     # where the generated output goes ("" = <PROJECT_PATH>/training-data/)
     OUTPUT_PATH = ""
@@ -34,7 +34,7 @@ class CONFIG:
 
     # Platforms each DATA_MANAGER supports
     SUPPORTED_PLATFORMS = {
-        "TPCH": ["Flink", "Wayang", "Spark", "SQL", "SQLServer", "SQLServerLTR"],
+        "TPCH": ["Flink", "Wayang", "Spark", "SQL", "SQLServer", "SQLServerFlat"],
         "JOB": ["Wayang", "Spark", "SQL", "SQLServer"],
         "IMDB": ["Flink"],
     }
