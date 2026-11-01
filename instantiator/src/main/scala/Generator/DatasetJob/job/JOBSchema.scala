@@ -143,6 +143,26 @@ object JOBSchema {
 
   val byName: Map[String, JOBTable] = tables.map(t => t.name -> t).toMap
 
+  /** `CREATE TABLE` statements as in JOB's schema.sql (integer / text columns, NOT NULL as there). */
+  def ddl: String = {
+    val creates = tables.map { t =>
+      val cols = t.columns.map { c =>
+        val tp = if (c.isInt) "INTEGER" else "TEXT"
+        val constraint = if (c.name == "id") " NOT NULL PRIMARY KEY" else if (!c.nullable) " NOT NULL" else ""
+        s"    ${c.name} $tp$constraint"
+      }
+      s"CREATE TABLE ${t.name} (\n${cols.mkString(",\n")}\n);"
+    }
+    s"""-- IMDB tables of the Join Order Benchmark, used by the generated SQL jobs.
+       |-- Load the CSV files of the JOB dump (comma separated, '"' quotes, '\\' escapes), e.g. in PostgreSQL:
+       |--   \\copy title FROM 'title.csv' WITH (FORMAT csv, ESCAPE '\\')
+       |-- or in DuckDB (its dialect detection does not handle these files, so it is switched off):
+       |--   COPY title FROM 'title.csv' (FORMAT csv, DELIMITER ',', QUOTE '"', ESCAPE '\\', HEADER false, AUTO_DETECT false);
+       |
+       |${creates.mkString("\n\n")}
+       |""".stripMargin
+  }
+
   def table(name: String): JOBTable =
     byName.getOrElse(name, throw new Exception(s"Can not find JOB table '$name'"))
 
