@@ -53,6 +53,7 @@ case class AbstractFlinkJob(jobBody:String, jobName:String, saveExecutionPlan:Bo
       buildWriter.close()
       pluginsWriter.close()
     }
+    AbstractJob.writeBuildProperties(finalProjectPath)
   }
 
 }
