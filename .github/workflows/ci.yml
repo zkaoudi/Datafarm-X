@@ -14,6 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.8", "3.13"]
+    defaults:
+      run:
+        # keep each step's output, so a failure can be reported as an annotation (last step)
+        shell: bash -eo pipefail {0}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -29,7 +33,7 @@ jobs:
         run: pip install -r requirements.txt duckdb
       - name: Generate jobs for every platform and dataset
         run: |
-          set -e
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
           for combo in TPCH:Flink TPCH:Wayang TPCH:Spark TPCH:SQL TPCH:SQLServer TPCH:SQLServerLTR \
                        JOB:Wayang JOB:Spark JOB:SQL JOB:SQLServer; do
             dataset=${combo%%:*}; platform=${combo#*:}
@@ -45,17 +49,25 @@ jobs:
           done
       - name: Check the SQL jobs with DuckDB
         run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
           python .github/scripts/check_sql_jobs.py training-data/SQL_TPCH/generated_jobs
           python .github/scripts/check_sql_jobs.py training-data/SQL_JOB/generated_jobs
       - name: Compile the Spark jobs
         if: matrix.python == '3.13'
         run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
           (cd training-data/Spark_TPCH/generated_jobs && sbt -batch package)
           (cd training-data/Spark_JOB/generated_jobs && sbt -batch package)
       - name: Same seed gives the same jobs
         run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
           python RunGenerator.py --dataset JOB --platform SQL --plans 5 --versions 2 --experiment again
           diff -r training-data/SQL_JOB/generated_jobs training-data/again/generated_jobs
+      - name: Report the end of the log
+        if: failure()
+        run: |
+          tail -n 40 "$RUNNER_TEMP/ci.log" | grep -v '^\s*$' | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}' > "$RUNNER_TEMP/tail.txt"
+          echo "::error title=Last lines of the failing step::$(cat "$RUNNER_TEMP/tail.txt")"
 
   labeling:
     name: Labeling code (Python 3.8)
