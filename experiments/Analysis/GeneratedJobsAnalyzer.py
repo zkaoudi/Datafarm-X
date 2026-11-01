@@ -2,14 +2,14 @@ import sys
 
 
 
-import abstract_generation.ExecutionPlanTools as planTools
+import datafarm.abstract_generation.ExecutionPlanTools as planTools
 from experiments.Analysis.Analysis_config_1 import Analysis_1
 from experiments.Analysis.Analysis_config_2 import Analysis_2
-from labeling.PredictorFeatureExtraction import compute_plan_features_from_graphs, show_feature_corr, \
+from datafarm.labeling.PredictorFeatureExtraction import compute_plan_features_from_graphs, show_feature_corr, \
     preprocess_jobs_data_info, fill_jobs_cardinality, compute_jobs_cardinality_features, \
     compute_cardinality_plan_features, remove_outliers, get_tables_features, compute_original_cardinality_plan_features
 from experiments.Analysis.models import compute_LR, test_model_3, build_RFR, validate_RFR
-from abstract_generation import FeatureExtraction
+from datafarm.abstract_generation import FeatureExtraction
 
 import pandas as pd
 import numpy as np

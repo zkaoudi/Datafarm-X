@@ -1,5 +1,5 @@
 {
- "source": "Derived from JOB query 9a by abstract_generation/JOB_InputWorkload.py (operator graph only; not produced by Flink).",
+ "source": "Derived from JOB query 9a by datafarm/abstract_generation/JOB_InputWorkload.py (operator graph only; not produced by Flink).",
  "query": "9a",
  "netRunTime": -1,
  "executionPlan": {

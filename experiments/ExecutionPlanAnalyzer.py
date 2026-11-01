@@ -11,8 +11,8 @@ from networkx.drawing.nx_agraph import graphviz_layout
 from IPython.display import display
 import itertools
 
-from abstract_generation.AbstractPlan import AbstractPlanGenerator
-from abstract_generation.Node import NodeOp
+from datafarm.abstract_generation.AbstractPlan import AbstractPlanGenerator
+from datafarm.abstract_generation.Node import NodeOp
 
 sns.set_context("talk")
 sns.set_style("whitegrid")

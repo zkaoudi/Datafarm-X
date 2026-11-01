@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datafarm-x"
+version = "0.1.0"
+description = "DataFarm training-data generator for Flink, Apache Wayang, Spark, SQL and SQL Server over TPC-H and JOB"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.7"
+dynamic = ["dependencies"]
+
+[project.urls]
+Repository = "https://github.com/zkaoudi/Datafarm-X"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+# Only the Python code is installed; the Scala instantiation project, input workloads and
+# experiments stay in the clone (run the pipeline from there with RunGenerator.py).
+[tool.setuptools.packages.find]
+include = ["datafarm*"]

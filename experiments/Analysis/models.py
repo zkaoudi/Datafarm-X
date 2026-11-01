@@ -3,7 +3,7 @@ from statsmodels.api import OLS
 from sklearn.metrics import r2_score, mean_absolute_error, classification_report, f1_score
 from sklearn.model_selection import GridSearchCV, train_test_split
 
-from labeling.PredictorFeatureExtraction import show_feature_corr
+from datafarm.labeling.PredictorFeatureExtraction import show_feature_corr
 
 import matplotlib.pyplot as plt
 import seaborn as sns

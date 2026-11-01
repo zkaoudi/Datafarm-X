@@ -16,7 +16,7 @@ def generate_abstract_plans():
     python_executable = sys.executable
     os.system(
         f"cd {CONFIG.PROJECT_PATH}; "
-        f"{python_executable} -m abstract_generation.generate_abstract_plans {CONFIG.N_JOBS} {CONFIG.ORIG_EXEC_PLAN_FOLDER} {CONFIG.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER} "
+        f"{python_executable} -m datafarm.abstract_generation.generate_abstract_plans {CONFIG.N_JOBS} {CONFIG.ORIG_EXEC_PLAN_FOLDER} {CONFIG.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER} "
         f"{CONFIG.ORIG_EXEC_PLAN_FILTER} {CONFIG.ABSTRACT_PLAN_MAX_DEPTH} {CONFIG.ABSTRACT_PLAN_MAX_JOINS}"
     )
 

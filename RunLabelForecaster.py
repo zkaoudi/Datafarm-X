@@ -8,10 +8,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from labeling.PredictorFeatureExtraction import compute_cardinality_plan_features
-from labeling.JobExecutionSampler.unsupervised_sampler import UniformAgglomerativeSampler, RandomSampler
-from labeling.ActiveModel.ActiveQuantileForest import QuantileForestModel
-from execution.flink import BuildAndSubmit
+from datafarm.labeling.PredictorFeatureExtraction import compute_cardinality_plan_features
+from datafarm.labeling.JobExecutionSampler.unsupervised_sampler import UniformAgglomerativeSampler, RandomSampler
+from datafarm.labeling.ActiveModel.ActiveQuantileForest import QuantileForestModel
+from datafarm.execution.flink import BuildAndSubmit
 from CONFIG import CONFIG
 
 

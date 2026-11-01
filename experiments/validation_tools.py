@@ -6,13 +6,13 @@ from IPython.display import display
 import numpy as np
 import pandas as pd
 
-from labeling.ActiveModel import RandomForestQuantileRegressor
-from labeling import PredictorFeatureExtraction as PFE
+from datafarm.labeling.ActiveModel import RandomForestQuantileRegressor
+from datafarm.labeling import PredictorFeatureExtraction as PFE
 from experiments.Analysis.models import get_X_y
 from experiments.Analysis.GeneratedJobsAnalyzer import load_generated_dataset, load_validation_dataset
-from labeling.PredictorFeatureExtraction import preprocess_jobs_data_info, fill_jobs_cardinality
-from labeling.JobExecutionSampler.unsupervised_sampler import UniformAgglomerativeSampler, RandomSampler
-from labeling.ActiveModel.ActiveQuantileForest import QuantileForestModel
+from datafarm.labeling.PredictorFeatureExtraction import preprocess_jobs_data_info, fill_jobs_cardinality
+from datafarm.labeling.JobExecutionSampler.unsupervised_sampler import UniformAgglomerativeSampler, RandomSampler
+from datafarm.labeling.ActiveModel.ActiveQuantileForest import QuantileForestModel
 from experiments.paper_results import IMDB_config, TPCH_config, TPCH_config_2
 
 import matplotlib.pyplot as plt

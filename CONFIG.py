@@ -29,8 +29,8 @@ class CONFIG:
     #################################################################
 
     # DATA GENERATORS HOME
-    ABSTRACT_PLAN_GENERATOR = join(PROJECT_PATH, "abstract_generation")
-    JOB_GENERATOR = join(PROJECT_PATH, "instantiation")
+    ABSTRACT_PLAN_GENERATOR = join(PROJECT_PATH, "datafarm", "abstract_generation")
+    JOB_GENERATOR = join(PROJECT_PATH, "datafarm", "instantiation")
 
     # Input workload the abstract plans are learned from, per DATA_MANAGER:
     # (folder, plan-file name filter, max plan depth, max joins); -1 = learned from the workload
