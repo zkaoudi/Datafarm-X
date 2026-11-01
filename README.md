@@ -149,7 +149,7 @@ change independently.
 | `datafarm/datasets_metadata/` | Dataset metadata, one folder per dataset (`tpch/`, `job/`, `imdb/`): `MetaDataAnalyzer.py` computes the statistics the job generator uses (filter selectivities, distinct group-by values) from the data; `TableMetaData.py` holds the table schemas (and, for TPC-H and IMDB, table cardinalities). |
 | `datafarm/execution/` | **Execution**: tools that run generated jobs and collect their run times or plans, used for labeling. `flink/BuildAndSubmit.py` builds and submits Flink jobs; `sql/` loads data into SQL Server and runs SQL jobs. Spark and Wayang have no runner yet; run their jobs yourself. |
 | `input-workloads/` | The input workloads abstract plans are learned from: `tpch/` (Flink execution plans of TPC-H queries) and `job/` (one plan per JOB query). |
-| `training-data/` | **Output**, one folder per experiment (`--experiment`, default `<platform>_<dataset>`): abstract plans, generated jobs, their execution plans and labels. Not tracked by git. |
+| `training-data/` | **Output**, one folder per experiment (`--experiment`, default `<platform>_<dataset>`): abstract plans, generated jobs, their execution plans and labels; see its [README](training-data/README.md). Not tracked by git. |
 | `experiments/` | Scripts and configurations of the DataFarm paper's experiments; not used by the pipeline. |
 
 The entry points `RunGenerator.py` and `RunLabelForecaster.py` and the configuration `CONFIG.py` are at the top level.
