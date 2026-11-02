@@ -1,7 +1,7 @@
 """
 Run generated SQL jobs on SQL Server and record row counts, run times and errors.
 
-Works for both SQL Server outputs: TARGET_PLATFORM "SQLServer" (JobXvY.sql) and "SQLServerLTR"
+Works for both SQL Server outputs: TARGET_PLATFORM "SQLServer" (JobXvY.sql) and "SQLServerFlat"
 (JobXvY.txt). With --showplan, it saves SQL Server's estimated plan (SET SHOWPLAN_XML ON) of each
 job as JobXvY.xml instead of running it.
 

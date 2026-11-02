@@ -19,7 +19,7 @@ class JOBDatasetOperatorManager(targetPlatform: String) extends AbstractDatasetO
 
   if (!Seq("Wayang", "Spark", "SQL", "SQLServer").contains(targetPlatform))
     throw new Exception(s"""DATA_MANAGER "JOB" supports TARGET_PLATFORM "Wayang", "Spark", "SQL" and "SQLServer" (got "$targetPlatform").""" +
-      (if (targetPlatform == "SQLServerLTR") " SQLServerLTR is TPC-H only: the LTR query format cannot express JOB joins between differently named columns (e.g. cast_info.movie_id = title.id)." else ""))
+      (if (targetPlatform == "SQLServerFlat") " SQLServerFlat is TPC-H only: the flat query format cannot express JOB joins between differently named columns (e.g. cast_info.movie_id = title.id)." else ""))
 
   platform = targetPlatform
 

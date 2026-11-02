@@ -50,15 +50,15 @@ def generate_jobs():
     run(["sbt", main], cwd=CONFIG.JOB_GENERATOR, env=env, what="Job generation")
 
 
-def write_ltr_pickles(job_folder):
-    """SQLServerLTR: the dict of each JobXvY.json as JobXvY.pickle, the file the LTR featurizers load."""
+def write_flat_pickles(job_folder):
+    """SQLServerFlat: the dict of each JobXvY.json also as JobXvY.pickle, for Python tools that load the query description."""
     files = [f for f in glob.glob(os.path.join(job_folder, "Job*v*.json"))]
     for f in files:
         with open(f) as fh:
             query = json.load(fh)
         with open(f[: -len(".json")] + ".pickle", "wb") as fh:
             pickle.dump(query, fh)
-    print(f"|--> Wrote {len(files)} .pickle query descriptions for the LTR pipeline")
+    print(f"|--> Wrote {len(files)} .pickle query descriptions")
 
 
 def create_project_folders():
@@ -97,7 +97,7 @@ def parse_args(argv=None):
     ap.add_argument("--output", default=CONFIG.OUTPUT_PATH,
                     help="folder the experiment folder is created in (default: training-data/ in the repository)")
     ap.add_argument("--table-prefix", default=CONFIG.SQLSERVER_TABLE_PREFIX,
-                    help='SQLServerLTR only: prefix of table names, e.g. "tpch.dbo." (default: none)')
+                    help='SQLServerFlat only: prefix of table names, e.g. "tpch.dbo." (default: none)')
     args = ap.parse_args(argv)
     supported = CONFIG.SUPPORTED_PLATFORMS[args.dataset]
     if args.platform not in supported:
@@ -127,8 +127,8 @@ if __name__ == "__main__":
     print("|Job Generation")
     generate_jobs()
 
-    if CONFIG.TARGET_PLATFORM == "SQLServerLTR":
-        write_ltr_pickles(CONFIG.GENERATED_JOB_FOLDER)
+    if CONFIG.TARGET_PLATFORM == "SQLServerFlat":
+        write_flat_pickles(CONFIG.GENERATED_JOB_FOLDER)
 
     print()
     print(f"|Done: {CONFIG.N_JOBS * CONFIG.N_VERSIONS} {CONFIG.TARGET_PLATFORM} jobs on {CONFIG.DATA_MANAGER} in "

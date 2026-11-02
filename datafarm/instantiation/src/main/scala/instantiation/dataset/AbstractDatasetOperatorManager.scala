@@ -160,7 +160,7 @@ object AbstractDatasetOperatorManager {
   def apply(s: String, p: String): AbstractDatasetOperatorManager = {
     if (s == "TPCH")
       new TPCHDatasetOperatorManager(p)
-    else if (s == "IMDB" && Seq("Spark", "SQL", "SQLServer", "SQLServerLTR").contains(p))
+    else if (s == "IMDB" && Seq("Spark", "SQL", "SQLServer", "SQLServerFlat").contains(p))
       throw new Exception(s"""DATA_MANAGER "IMDB" does not support TARGET_PLATFORM "$p"""")
     else if (s == "IMDB")
       IMDBKDatasetOperatorManager

@@ -3,7 +3,7 @@ package instantiation.dataset.tpch
 import instantiation.dataset.AbstractDatasetOperatorManager
 import instantiation.AbstractJob
 import instantiation.platform.sql.AbstractSQLJob
-import instantiation.platform.sql.AbstractSQLServerLTRJob
+import instantiation.platform.sql.AbstractSQLServerFlatJob
 import instantiation.platform.spark.AbstractSparkJob
 import instantiation.platform.spark.AbstractSparkTableOperatorManager
 import instantiation.dataset.AbstractTableOperatorManager
@@ -85,15 +85,15 @@ class TPCHDatasetOperatorManager extends AbstractDatasetOperatorManager {
           case _ => throw new Exception(s"Can not find table operator manager for table '$s' ")
        }
     }
-    case "SQLServerLTR" => {
+    case "SQLServerFlat" => {
        s match {
-          case "lineitem" => new LineitemOperatorManager with TPCHSQLServerLTR
-          case "orders" => new OrdersOperatorManager with TPCHSQLServerLTR
-          case "customer" => new CustomerOperatorManager with TPCHSQLServerLTR
-          case "partsupp" => new PartsuppOperatorManager with TPCHSQLServerLTR
-          case "part" => new PartOperatorManager with TPCHSQLServerLTR
-          case "supplier" => new SupplierOperatorManager with TPCHSQLServerLTR
-          case "nation" => new NationOperatorManager with TPCHSQLServerLTR
+          case "lineitem" => new LineitemOperatorManager with TPCHSQLServerFlat
+          case "orders" => new OrdersOperatorManager with TPCHSQLServerFlat
+          case "customer" => new CustomerOperatorManager with TPCHSQLServerFlat
+          case "partsupp" => new PartsuppOperatorManager with TPCHSQLServerFlat
+          case "part" => new PartOperatorManager with TPCHSQLServerFlat
+          case "supplier" => new SupplierOperatorManager with TPCHSQLServerFlat
+          case "nation" => new NationOperatorManager with TPCHSQLServerFlat
           case _ => throw new Exception(s"Can not find table operator manager for table '$s' ")
        }
     }
@@ -115,18 +115,18 @@ class TPCHDatasetOperatorManager extends AbstractDatasetOperatorManager {
     AbstractSparkJob(jobBody, jobName, obj => TPCHParsers.code(obj, tables), "TPC-H")
 
   /**
-    * For SQLServerLTR every table may occur only once (the LTR query format has no aliases), so the
+    * For SQLServerFlat every table may occur only once (the flat query format has no aliases), so the
     * join sequence is drawn again from other seeds until its tables are distinct.
     */
   override def getSourceTableSequence(nJoins: Int, seed: Int = 0): (Seq[AbstractTableOperatorManager], Seq[JoinRelation]) =
-    if (platform != "SQLServerLTR") super.getSourceTableSequence(nJoins, seed)
+    if (platform != "SQLServerFlat") super.getSourceTableSequence(nJoins, seed)
     else (0 until 1000).iterator
       .map(i => scala.util.Try(super.getSourceTableSequence(nJoins, seed + 1000 * i)).toOption)
       .collectFirst { case Some((ts, js)) if ts.map(_.tableName).distinct.size == ts.size => (ts, js) }
-      .getOrElse(throw new Exception(s"No sequence of $nJoins joins over distinct TPC-H tables (required by SQLServerLTR)"))
+      .getOrElse(throw new Exception(s"No sequence of $nJoins joins over distinct TPC-H tables (required by SQLServerFlat)"))
 
   override def sqlJob(jobBody: String, jobName: String, tables: Seq[AbstractTableOperatorManager]): AbstractJob = {
-    if (platform == "SQLServerLTR") return AbstractSQLServerLTRJob(jobBody, jobName)
+    if (platform == "SQLServerFlat") return AbstractSQLServerFlatJob(jobBody, jobName)
     val all = (this.tables :+ "nation").map(t => getTableOperatorManager(t, "SQL"))
     if (platform == "SQLServer") AbstractSQLJob(jobBody, jobName, "TPC-H (SQL Server)", TPCHSql.ddlSQLServer(all))
     else AbstractSQLJob(jobBody, jobName, "TPC-H", TPCHSql.ddl(all))
