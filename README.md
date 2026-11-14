@@ -174,15 +174,26 @@ sbt-assembly, `src/main/scala/JobXvY.scala`) using the Flink DataSet API.
 
 ### Wayang
 
-Each job is one file, `JobXvY.scala`: a class in package `org.apache.wayang.ml.generatables` that extends
-`GeneratableJob`. Its `buildPlan(args)` builds the plan with the Wayang Scala API and returns its final `DataQuanta`
-(`args(0)`: platform plugins, `args(1)`: data path).
+Each job is a standalone Scala object in package `datafarm.generated.wayang` that uses only the public
+[Apache Wayang](https://github.com/apache/incubator-wayang) Scala API. `buildPlan(planBuilder, datapath)` builds the
+plan and returns its final `DataQuanta` without executing it; `main` runs it.
 
-- **Wayang version:** the jobs use classes of a Wayang fork with an ML training module (`GeneratableJob`,
-  `withUdfComplexity`, `collectNoExecute`, and `toTuple` on the TPC-H data classes), which the public
-  `apache/wayang` release does not have.
-- **Datasets:** TPC-H uses the TPC-H data classes of `wayang-benchmark` (`org.apache.wayang.apps.tpch.data`). JOB
-  jobs bring their own parser object (`JobXvYParsers` in the same file), so no JOB classes are needed in Wayang.
+- **Versions:** the generator writes a `build.sbt` next to the jobs for Apache Wayang 1.1.1 (the latest release on
+  Maven Central; Scala 2.12, Java 17), with `wayang-api-scala-java`, `wayang-java` and `wayang-spark`. To build
+  against Wayang's main branch instead, run `mvn install -DskipTests` in a Wayang checkout, set `wayangVersion` in
+  the `build.sbt` to its version (e.g. `1.1.2-SNAPSHOT`) and uncomment the `Resolver.mavenLocal` line.
+- **Running a job:**
+
+  ```bash
+  cd training-data/<experiment>/generated_jobs
+  sbt "runMain datafarm.generated.wayang.Job0v0 java /path/to/data/"
+  ```
+
+  The first argument is the platforms Wayang may use: `java`, `spark` or `java,spark`. The data path can be a local
+  folder or a URL. A job collects the output of its plan and prints the row count and run time.
+- **Parsing:** each job parses its own input (object `JobXvYParsers` in the same file): TPC-H `.tbl` files or the
+  JOB CSVs, so no dataset classes are needed in Wayang. TPC-H dates become `Int`s (year * 365 + month * 30 + day),
+  which the generated date filters compare against.
 
 ### Spark
 
@@ -203,8 +214,7 @@ filters or join order.
   The data path must end with `/`. A job runs its plan with `count()` and prints the row count and run time. With
   `planOutputDir`, it also writes `JobXvY.json` with the run time, row count and RDD lineage (`toDebugString`).
 - **Parsing:** each job parses its own input (object `JobXvYParsers` in the same file): TPC-H `.tbl` files or the
-  JOB CSVs. TPC-H dates become `Int`s in the encoding of Wayang's `CsvUtils.parseDate`, so date filters behave the
-  same as on Wayang.
+  JOB CSVs. The parsers are the same as in the Wayang jobs, so date filters behave the same on both.
 - **Semantics:** joins keep the right-hand tuple, as in the Wayang jobs. A Reduce pair in the abstract plan is a
   keyed reduce on a group field for TPC-H (as in the Flink TPC-H jobs) and a global reduce for JOB (JOB's `MIN(...)`
   aggregate).

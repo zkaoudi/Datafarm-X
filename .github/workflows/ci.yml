@@ -63,6 +63,19 @@ jobs:
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
           python RunGenerator.py --dataset JOB --platform SQL --plans 5 --versions 2 --experiment again
           diff -r training-data/SQL_JOB/generated_jobs training-data/again/generated_jobs
+      # Apache Wayang 1.1 is built for Java 17; last, since the generator (Scala 2.11) needs Java 11
+      - uses: actions/setup-java@v4
+        if: matrix.python == '3.13'
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: sbt
+      - name: Compile the Wayang jobs against Apache Wayang
+        if: matrix.python == '3.13'
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
+          (cd training-data/Wayang_TPCH/generated_jobs && sbt -batch compile)
+          (cd training-data/Wayang_JOB/generated_jobs && sbt -batch compile)
       - name: Report the end of the log
         if: failure()
         run: |

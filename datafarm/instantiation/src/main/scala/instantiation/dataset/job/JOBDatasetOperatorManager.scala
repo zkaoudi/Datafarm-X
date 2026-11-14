@@ -4,6 +4,7 @@ import instantiation.dataset.AbstractDatasetOperatorManager
 import instantiation.AbstractJob
 import instantiation.platform.sql.AbstractSQLJob
 import instantiation.platform.spark.AbstractSparkJob
+import instantiation.platform.wayang.AbstractWayangJob
 import instantiation.dataset.AbstractTableOperatorManager
 import instantiation.dataset.JoinRelation
 import instantiation.dataset.ParserCode
@@ -34,8 +35,10 @@ class JOBDatasetOperatorManager(targetPlatform: String) extends AbstractDatasetO
     case _ => new JOBWayangTableOperatorManager(JOBSchema.table(s), catalog(s))
   }
 
-  override def wayangJob(jobBody: String, jobName: String, saveExecutionPlan: Boolean, tables: Seq[String]): AbstractJob =
-    AbstractWayangJOBJob(jobBody, jobName, saveExecutionPlan, tables)
+  override def wayangJob(jobBody: String, jobName: String, saveExecutionPlan: Boolean, tables: Seq[AbstractTableOperatorManager]): AbstractJob = {
+    val names = tables.map(_.tableName).distinct
+    AbstractWayangJob(jobBody, jobName, obj => JOBParsers.code(obj, names), "JOB", saveExecutionPlan)
+  }
 
   override def sparkJob(jobBody: String, jobName: String, tables: Seq[AbstractTableOperatorManager]): AbstractJob = {
     val names = tables.map(_.tableName).distinct

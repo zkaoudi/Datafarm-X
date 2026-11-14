@@ -1,7 +1,6 @@
 package instantiation.dataset
 
 import instantiation.AbstractJob
-import instantiation.platform.wayang.AbstractWayangJob
 import instantiation.dataset.imdb.IMDBKDatasetOperatorManager
 import instantiation.dataset.job.JOBDatasetOperatorManager
 import instantiation.dataset.tpch.TPCHDatasetOperatorManager
@@ -55,13 +54,11 @@ trait AbstractDatasetOperatorManager {
   def getTableOperatorManager(s: String,p: String): AbstractTableOperatorManager
 
   /**
-    * Wraps the generated operator code into a Wayang job. Datasets that need extra definitions in
-    * the generated file (e.g. their own CSV parsers) override this.
-    *
-    * @param tables names of the tables the job reads
+    * Wraps the generated operator code into a Wayang job, including the parsers for `tables`.
+    * Only datasets that implement Wayang code generation override this.
     */
-  def wayangJob(jobBody: String, jobName: String, saveExecutionPlan: Boolean, tables: Seq[String]): AbstractJob =
-    AbstractWayangJob(jobBody, jobName, saveExecutionPlan = saveExecutionPlan)
+  def wayangJob(jobBody: String, jobName: String, saveExecutionPlan: Boolean, tables: Seq[AbstractTableOperatorManager]): AbstractJob =
+    throw new Exception(s"""TARGET_PLATFORM "Wayang" is not supported by ${getClass.getSimpleName}""")
 
   /**
     * Wraps the generated operator code into a Spark job, including the parsers for `tables`.
