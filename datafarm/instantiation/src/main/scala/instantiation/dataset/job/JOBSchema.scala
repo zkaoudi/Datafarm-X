@@ -205,11 +205,16 @@ object JOBSchema {
        |""".stripMargin
   }
 
-  /** `CREATE TABLE` statements as in JOB's schema.sql (integer / text columns, NOT NULL as there). */
+  /**
+    * `CREATE TABLE` statements identical to JOB's schema.sql: `integer`, `character varying(n)` for the
+    * columns listed in [[varcharLength]] and `text` for all other text columns, NOT NULL as there.
+    */
   def ddl: String = {
     val creates = tables.map { t =>
       val cols = t.columns.map { c =>
-        val tp = if (c.isInt) "INTEGER" else "TEXT"
+        val tp =
+          if (c.isInt) "integer"
+          else varcharLength.get((t.name, c.name)).map(n => s"character varying($n)").getOrElse("text")
         val constraint = if (c.name == "id") " NOT NULL PRIMARY KEY" else if (!c.nullable) " NOT NULL" else ""
         s"    ${c.name} $tp$constraint"
       }

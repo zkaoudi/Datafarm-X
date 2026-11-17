@@ -227,8 +227,8 @@ and DuckDB.
 - **Structure:** every plan operator becomes a common table expression named like the variables of the dataflow
   jobs (`source0`, `filter1`, `join2`, ...), and the job returns the output of the last one.
 - **Schema:** the generator writes `schema.sql` next to the jobs: the `CREATE TABLE` statements, with load commands
-  for PostgreSQL and DuckDB in its header. TPC-H uses dbgen's column names (`l_orderkey`, ...), JOB those of its
-  `schema.sql`.
+  for PostgreSQL and DuckDB in its header. TPC-H uses dbgen's column names (`l_orderkey`, ...). For JOB, the
+  `CREATE TABLE` statements are those of JOB's `schema.sql` (`integer`, `character varying(n)` and `text`).
 - **Operators:** joins keep the right-hand rows, as in the dataflow jobs. A group-by (or keyed Reduce) returns one
   row per key with `MIN` of each other column, and a global Reduce one row with `MIN` of each column. Maps and
   partitions pass their input through, since their UDF cost has no SQL counterpart.
