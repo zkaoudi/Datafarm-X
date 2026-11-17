@@ -84,6 +84,14 @@ object AbstractWayangJob {
        |
        |// run jobs in their own JVM: Wayang and Spark load their configuration through the class loader
        |run / fork := true
+       |
+       |// JVM flags Wayang's Spark platform needs on Java 17 (as in Wayang's integration tests)
+       |run / javaOptions ++= Seq(
+       |  "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
+       |  "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"
+       |) ++ Seq("java.nio", "sun.nio.ch", "java.lang", "java.util", "java.io", "java.lang.reflect",
+       |  "sun.reflect.annotation", "java.util.concurrent", "java.net", "java.lang.invoke")
+       |  .map(p => s"--add-opens=java.base/$$p=ALL-UNNAMED")
        |""".stripMargin
 
   val JOB_TEMPLATE: String =

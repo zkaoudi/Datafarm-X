@@ -90,6 +90,23 @@ jobs:
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
           (cd training-data/Wayang_TPCH/generated_jobs && sbt -batch compile)
           (cd training-data/Wayang_JOB/generated_jobs && sbt -batch compile)
+      - name: Run the TPC-H Wayang jobs on a small TPC-H dataset
+        if: matrix.python == '3.13'
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
+          if [ ! -f "$RUNNER_TEMP/tpch/lineitem.tbl" ]; then
+            git clone --depth 1 https://github.com/electrum/tpch-dbgen.git "$RUNNER_TEMP/dbgen"
+            make -C "$RUNNER_TEMP/dbgen" -s
+            mkdir -p "$RUNNER_TEMP/tpch"
+            (cd "$RUNNER_TEMP/dbgen" && DSS_PATH="$RUNNER_TEMP/tpch" ./dbgen -s 0.01 -f)
+            chmod 644 "$RUNNER_TEMP"/tpch/*.tbl
+          fi
+          for platforms in java spark; do
+            python datafarm/execution/wayang/run_wayang_jobs.py training-data/Wayang_TPCH/generated_jobs \
+              --data "$RUNNER_TEMP/tpch" --platforms $platforms --timeout 600 \
+              --output "$RUNNER_TEMP/wayang_results_$platforms.csv"
+            cat "$RUNNER_TEMP/wayang_results_$platforms.csv"
+          done
       - name: Report the end of the log
         if: failure()
         run: |
