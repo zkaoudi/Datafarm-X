@@ -147,7 +147,7 @@ change independently.
 | `datafarm/instantiation/` | **Instantiation** (Scala, sbt project). `instantiation.JobGenerator` turns abstract plans into jobs: `platform/{flink,wayang,spark,sql}` translates operators for each platform, `dataset/{tpch,job,imdb}` holds the schemas, joins, filters and statistics of each dataset. |
 | `datafarm/labeling/` | **Label forecasting** (Python): features, job sampling, the quantile-forest model and the Flink task-manager client used by `RunLabelForecaster.py`. |
 | `datafarm/datasets_metadata/` | Dataset metadata, one folder per dataset (`tpch/`, `job/`, `imdb/`): `MetaDataAnalyzer.py` computes the statistics the job generator uses (filter selectivities, distinct group-by values) from the data; `TableMetaData.py` holds the table schemas (and, for TPC-H and IMDB, table cardinalities). |
-| `datafarm/execution/` | **Execution**: tools that run generated jobs and collect their run times or plans, used for labeling. `flink/BuildAndSubmit.py` builds and submits Flink jobs; `sql/` loads data into SQL Server and runs SQL jobs. Spark and Wayang have no runner yet; run their jobs yourself. |
+| `datafarm/execution/` | **Execution**: tools that run generated jobs and collect their run times or plans, used for labeling. `flink/BuildAndSubmit.py` builds and submits Flink jobs; `spark/run_spark_jobs.py` builds and runs Spark jobs; `sql/` loads data into SQL Server and runs SQL jobs. Wayang has no runner yet; run its jobs yourself. |
 | `input-workloads/` | The input workloads abstract plans are learned from: `tpch/` (Flink execution plans of TPC-H queries) and `job/` (one plan per JOB query). |
 | `training-data/` | **Output**, one folder per experiment (`--experiment`, default `<platform>_<dataset>`): abstract plans, generated jobs, their execution plans and labels; see its [README](training-data/README.md). Not tracked by git. |
 | `experiments/` | Scripts and configurations of the DataFarm paper's experiments; not used by the pipeline. |
@@ -202,7 +202,20 @@ transformation per plan operator. Spark therefore runs exactly the generated pla
 filters or join order.
 
 - **Versions:** the generator writes a `build.sbt` for Spark 3.5.3 and Scala 2.12 (`provided`) next to the jobs.
-- **Running a job:**
+- **Running all jobs:** `datafarm/execution/spark/run_spark_jobs.py` builds the jobs with `sbt package`, submits
+  each one with `spark-submit` and writes a CSV with, per job, the status (`ok`, `error` or `timeout`), the number of
+  output rows, the net run time the job measures (its `count()`, without start-up), the wall-clock time of the
+  submit, and the error:
+
+  ```bash
+  python datafarm/execution/spark/run_spark_jobs.py training-data/<experiment>/generated_jobs \
+    --data /path/to/data/ --output results.csv [--master local[*]] [--plans plansDir] [--timeout 600]
+  ```
+
+  It uses `$SPARK_HOME/bin/spark-submit`, or `spark-submit` from the `PATH`; `pip install pyspark==3.5.3` provides
+  one. Use a Spark 3.5 build for Scala 2.12. `--conf KEY=VALUE` and `--driver-memory` are passed to `spark-submit`,
+  `--jobs` runs only some jobs, and `--no-build` (or `--jar`) skips the build.
+- **Running one job:**
 
   ```bash
   cd training-data/<experiment>/generated_jobs
@@ -362,8 +375,8 @@ every job.
 
 Labeling is optional: the generated jobs and `generated_jobs_info.json` are usable on their own. It currently
 labels **Flink jobs on TPC-H** only, and submits them through `datafarm/execution/flink/BuildAndSubmit.py` to a
-running Flink 1.10 cluster. For the other platforms, run the jobs yourself: Spark jobs and
-`datafarm/execution/sql/run_sql_jobs.py` report run times.
+running Flink 1.10 cluster. For Spark and SQL Server, `datafarm/execution/spark/run_spark_jobs.py` and
+`datafarm/execution/sql/run_sql_jobs.py` run the jobs and report their run times; run Wayang jobs yourself.
 
 ```bash
 pip install -r requirements-labeling.txt   # Python 3.6-3.8: the labeling code needs scikit-learn 0.22
