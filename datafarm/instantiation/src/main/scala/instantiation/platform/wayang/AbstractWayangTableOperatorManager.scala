@@ -2,12 +2,17 @@ package instantiation.platform.wayang
 
 import instantiation.dataset.AbstractTableOperatorManager
 import instantiation.dataset.JoinRelation
+import instantiation.dataset.ParserCode
 import instantiation.dataset.utils.getElementBySeed
 
 
 
 /**
   * Created by researchuser7 on 2020-04-21.
+  *
+  * Wayang code generation for a table, using only the public Apache Wayang Scala API. Rows are
+  * Scala tuples produced by the job's parser object ([[ParserCode]]); tuple fields are addressed
+  * 1-based (`_1`, `_2`, ...), as in the `fields` maps.
   */
 trait AbstractWayangTableOperatorManager extends AbstractTableOperatorManager {
 
@@ -32,18 +37,16 @@ trait AbstractWayangTableOperatorManager extends AbstractTableOperatorManager {
     | val $outVarName = planBuilder
     | .readTextFile(datapath + "$tableName.tbl")
     | .withName("Read $wayangName")
-    | .map($wayangName.parseCsv)
-    | .map($wayangName.toTuple)
+    | .map(${ParserCode.Token}.$tableName)
     | .withName("Parse $wayangName to tuple")
     """.stripMargin
   }
 
   override def buildFilterCode(inVarName: String, outVarName: String, filterField: String, filterValue: String, filterOp: String = "<="): String = {
-    // Wayang's TPC-H tuples hold flags such as o_orderstatus as Char; comparing a Char with a String literal
-    // is always false, so string equality is done on the field's string form.
-    val field = if (filterValue.trim.startsWith("\"")) s"x._$filterField.toString" else s"x._$filterField"
+    // dates are parsed into the Int encoding of the parser object's parseDate (see TPCHParsers)
+    val value = filterValue.replace("CsvUtils.parseDate(", s"${ParserCode.Token}.parseDate(")
     s"""
-       |val $outVarName = $inVarName.filter(x=>$field $filterOp $filterValue)
+       |val $outVarName = $inVarName.filter(x => x._$filterField $filterOp $value)
       """.stripMargin
   }
 
@@ -98,19 +101,22 @@ trait AbstractWayangTableOperatorManager extends AbstractTableOperatorManager {
   }
 
 
+  /**
+    * Identity maps whose UDF does linear (0), quadratic (1) or superquadratic (2) work in the tuple
+    * width. Apache Wayang's Scala API has no UDF-complexity annotation, so the complexity is only in
+    * the UDF itself and in the recorded job info.
+    */
   override def mapCode(inVarName: String, outVarName: String, seed: Int = 0): (String, Int) = {
     val complexity = seed % 3
     val c = complexity match {
       case 0 => s"""
-                   |val $outVarName = $inVarName.map(x=>x).withUdfComplexity(UDFComplexity.LINEAR)
+                   |val $outVarName = $inVarName.map(x=>x)
                 """.stripMargin
       case 1 => s"""
                    |val $outVarName = $inVarName.map(x=> {var count = 0; for (v <- x.productIterator) count+=1; x})
-                   |                  .withUdfComplexity(UDFComplexity.QUADRATIC)
                 """.stripMargin
       case 2 => s"""
                    |val $outVarName = $inVarName.map(x=> {var count = 0; for (v1 <- x.productIterator; v2 <- x.productIterator) count+=1; x})
-                   |                  .withUdfComplexity(UDFComplexity.SUPERQUADRATIC)
        """.stripMargin
     }
     (c, complexity)
@@ -156,9 +162,10 @@ trait AbstractWayangTableOperatorManager extends AbstractTableOperatorManager {
     buildSortPartitionCode(inVarName, outVarName, sFieldId.toString)
   }
 
+  /** The plan's final DataQuanta; the job's main collects it. */
   override def sinkCode(inVarName: String, outVarName: String): String = {
     s"""
-      | return $inVarName.collectNoExecute()
+      | return $inVarName
       """.stripMargin
   }
 

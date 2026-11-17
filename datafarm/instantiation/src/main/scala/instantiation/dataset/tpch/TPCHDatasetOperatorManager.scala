@@ -7,7 +7,7 @@ import instantiation.platform.sql.AbstractSQLServerFlatJob
 import instantiation.platform.spark.AbstractSparkJob
 import instantiation.platform.spark.AbstractSparkTableOperatorManager
 import instantiation.dataset.AbstractTableOperatorManager
-import instantiation.platform.wayang.AbstractWayangTableOperatorManager
+import instantiation.platform.wayang.{AbstractWayangJob, AbstractWayangTableOperatorManager}
 import instantiation.dataset.JoinRelation
 import instantiation.platform.sql.SQLServerSQL
 
@@ -110,6 +110,9 @@ class TPCHDatasetOperatorManager extends AbstractDatasetOperatorManager {
         }
       }
     }
+
+  override def wayangJob(jobBody: String, jobName: String, saveExecutionPlan: Boolean, tables: Seq[AbstractTableOperatorManager]): AbstractJob =
+    AbstractWayangJob(jobBody, jobName, obj => TPCHParsers.code(obj, tables), "TPC-H", saveExecutionPlan)
 
   override def sparkJob(jobBody: String, jobName: String, tables: Seq[AbstractTableOperatorManager]): AbstractJob =
     AbstractSparkJob(jobBody, jobName, obj => TPCHParsers.code(obj, tables), "TPC-H")

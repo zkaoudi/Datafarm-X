@@ -4,11 +4,11 @@ import instantiation.dataset.AbstractTableOperatorManager
 
 
 /**
-  * Parse functions for the TPC-H `.tbl` files (`|` separated), generated into each Spark TPC-H job.
+  * Parse functions for the TPC-H `.tbl` files (`|` separated), generated into each Wayang and Spark TPC-H job.
   *
   * Tuple types follow each table manager's `typeSchema`, except that dates become `Int` in the
-  * encoding of Wayang's `CsvUtils.parseDate` (year * 365 + month * 30 + day), which the generated
-  * date filters compare against.
+  * encoding year * 365 + month * 30 + day (as in `CsvUtils.parseDate` of Wayang's TPC-H benchmark app),
+  * which the generated date filters compare against.
   */
 object TPCHParsers {
 
@@ -36,7 +36,7 @@ object TPCHParsers {
       s"/** TPC-H parsing helpers for [[$objectName]]. */",
       s"object $objectName {",
       "",
-      "  /** yyyy-MM-dd as year * 365 + month * 30 + day (Wayang's CsvUtils.parseDate encoding). */",
+      "  /** yyyy-MM-dd as year * 365 + month * 30 + day (the encoding of Wayang's TPC-H CsvUtils.parseDate). */",
       "  def parseDate(s: String): Int = {",
       "    val p = s.trim.split('-')",
       "    p(0).toInt * 365 + p(1).toInt * 30 + p(2).toInt",

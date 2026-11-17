@@ -19,7 +19,7 @@ What `generated_jobs/` contains depends on the platform:
 | Platform | Jobs |
 |---|---|
 | `Flink` | one sbt project per job (`JobNvM/`) |
-| `Wayang` | `JobNvM.scala` |
+| `Wayang` | `JobNvM.scala`, plus `build.sbt` to build them all with `sbt compile` |
 | `Spark` | `JobNvM.scala`, plus `build.sbt` to build them all with `sbt package` |
 | `SQL`, `SQLServer` | `JobNvM.sql`, plus `schema.sql` with the tables |
 | `SQLServerFlat` | `JobNvM.txt` (query), `JobNvM.json` and `JobNvM.pickle` (its description) |

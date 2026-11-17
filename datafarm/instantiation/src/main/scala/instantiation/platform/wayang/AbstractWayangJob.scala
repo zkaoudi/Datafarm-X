@@ -1,132 +1,138 @@
 package instantiation.platform.wayang
 
 import instantiation.AbstractJob
+import instantiation.dataset.ParserCode
 
-import scala.reflect.runtime.currentMirror
-import scala.tools.reflect.ToolBox
-import scala.reflect.runtime.universe._
-import java.io.File
-import java.nio.file.Paths
+import java.io.PrintWriter
+import java.nio.file.{Files, Paths}
+
+
 /**
-  * Created by researchuser7 on 2020-03-17.
+  * A generated Wayang job: a standalone object in package `datafarm.generated.wayang` that only uses
+  * the public Apache Wayang API (wayang-api-scala-java, wayang-java, wayang-spark), so it compiles
+  * against an Apache Wayang release or a build of Wayang's main branch.
+  *
+  *  - `buildPlan(planBuilder, datapath)` builds the plan and returns its final `DataQuanta` without
+  *    executing anything;
+  *  - `main(args)` (`<platforms> <datapath>`) registers the platforms (`java`, `spark` or
+  *    `java,spark`), executes the plan by collecting its output and reports the output size and run time.
+  *
+  * The jobs parse their input themselves (object `<jobName>Parsers` in the same file, see [[ParserCode]]),
+  * so they need no dataset classes on the Wayang side. `createProject` also writes a `build.sbt` (and
+  * `project/build.properties`) next to the jobs, so the whole folder builds with `sbt compile`.
+  *
+  * @param parsers object name => Scala source of the parser object
+  * @param dataset name of the dataset, for the generated comment and the Wayang job name
   */
+case class AbstractWayangJob(jobBody: String, jobName: String, parsers: String => String, dataset: String,
+                             saveExecutionPlan: Boolean = false) extends AbstractJob {
 
-case class AbstractWayangJob(jobBody:String, jobName:String, saveExecutionPlan:Boolean=false) extends AbstractJob {
+  // NB: only constructor parameters and defs here, AbstractJob calls fillBody() during construction
+  def parsersObject: String = jobName + "Parsers"
 
-  override def fillBody(): String ={
-
+  override def fillBody(): String =
     AbstractWayangJob.JOB_TEMPLATE
-      .replace("//#job_name#//", this.jobName)
-      .replace("//#body#//", this.jobBody)
+      .replace("//#job_name#//", jobName)
+      .replace("//#dataset#//", dataset)
+      .replace("//#body#//", jobBody.replace(ParserCode.Token, parsersObject))
+      .replace("//#parsers#//", parsers(parsersObject))
+
+  override def fillSBT(): String = AbstractWayangJob.SBT_TEMPLATE
+
+  override def createProject(projectPath: String): Unit = {
+    val path = Paths.get(projectPath, s"$jobName.scala")
+    println(s"Saving Wayang job file to $path")
+    write(path.toString, filledBody)
+    val sbt = Paths.get(projectPath, "build.sbt")
+    if (Files.notExists(sbt)) {
+      write(sbt.toString, filledSBT)
+      AbstractJob.writeBuildProperties(projectPath)
+    }
   }
 
-  override def fillSBT(): String = {
-    AbstractWayangJob.SBT_TEMPLATE
-      .replace("//#job_name#//", this.jobName)
-  }
-
-  override def createProject(projectPath:String): Unit ={
-
-    val finalProjectPath = Paths.get(projectPath, jobName).toString
-    println(s"Saving Wayang job files project to $finalProjectPath")
-
-    val jobWriter = new java.io.PrintWriter(s"$projectPath/$jobName.scala")
-    try {
-      jobWriter.write(filledBody)
-    }
-    finally {
-      jobWriter.close()
-    }
+  private def write(path: String, content: String): Unit = {
+    val w = new PrintWriter(new java.io.File(path), "UTF-8")
+    try w.write(content) finally w.close()
   }
 }
 
 object AbstractWayangJob {
 
+  val Package = "datafarm.generated.wayang"
+
+  /** Apache Wayang version in the generated build.sbt (latest release on Maven Central). */
+  val WayangVersion = "1.1.1"
+
   val SBT_TEMPLATE: String =
-    """
-       |name := "//#job_name#//"
+    s"""name := "datafarm-wayang-jobs"
        |
        |version := "0.1"
        |
-       |scalaVersion := "2.11.12"
+       |// Apache Wayang 1.1 is built with Scala 2.12 and Java 17
+       |scalaVersion := "2.12.18"
        |
-       |val flinkVersion = "1.10.0"
-       |val flinkConf = "provided" // "compile" | "provided"
+       |// To build against Wayang's main branch instead, run `mvn install -DskipTests` in a Wayang checkout,
+       |// set this to its version (e.g. 1.1.2-SNAPSHOT) and uncomment the resolver below.
+       |val wayangVersion = "$WayangVersion"
+       |// resolvers += Resolver.mavenLocal
        |
-       |val flinkDependencies = Seq(
-       |  "org.apache.flink" %% "flink-scala" % flinkVersion % flinkConf,
-       |  "org.apache.flink" %% "flink-streaming-scala" % flinkVersion % flinkConf,
-       |  "org.apache.flink" % "flink-hadoop-fs" % flinkVersion % "compile"
+       |libraryDependencies ++= Seq(
+       |  "org.apache.wayang" % "wayang-api-scala-java" % wayangVersion,
+       |  "org.apache.wayang" % "wayang-java" % wayangVersion,
+       |  "org.apache.wayang" % "wayang-spark" % wayangVersion
        |)
        |
-       |val utilsDependencies = Seq(
-       |  "joda-time" % "joda-time" % "2.8.1"
-       |)
-       |
-       |libraryDependencies ++= flinkDependencies
-       |libraryDependencies ++= utilsDependencies
-       |
-       |assemblyJarName in assembly := "//#job_name#//.jar"
-     """.stripMargin
+       |// run jobs in their own JVM: Wayang and Spark load their configuration through the class loader
+       |run / fork := true
+       |""".stripMargin
 
   val JOB_TEMPLATE: String =
-    """
-  | /*
-  | * Licensed to the Apache Software Foundation (ASF) under one
-  | * or more contributor license agreements.  See the NOTICE file
-  | * distributed with this work for additional information
-  | * regarding copyright ownership.  The ASF licenses this file
-  | * to you under the Apache License, Version 2.0 (the
-  | * "License"); you may not use this file except in compliance
-  | * with the License.  You may obtain a copy of the License at
-  | *
-  | *     http://www.apache.org/licenses/LICENSE-2.0
-  | *
-  | * Unless required by applicable law or agreed to in writing, software
-  | * distributed under the License is distributed on an "AS IS" BASIS,
-  | * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  | * See the License for the specific language governing permissions and
-  | * limitations under the License.
-  | */
+    s"""package $Package
   |
-  | package org.apache.wayang.ml.generatables
+  |import org.apache.wayang.api._
+  |import org.apache.wayang.core.api.{Configuration, WayangContext}
+  |import org.apache.wayang.java.Java
+  |import org.apache.wayang.spark.Spark
   |
-  | import org.apache.wayang.api._
-  | import org.apache.wayang.core.api.{Configuration, WayangContext}
-  | import org.apache.wayang.core.plugin.Plugin
-  | import org.apache.wayang.apps.tpch.data.{Customer, Order, LineItem, Nation, Part, PartSupplier, Supplier} 
-  | import org.apache.wayang.core.plugin.Plugin
-  | import java.sql.Date
-  | import org.apache.wayang.apps.util.{ExperimentDescriptor, Parameters, ProfileDBHelper}
-  | import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
-  | import org.apache.wayang.apps.tpch.CsvUtils
-  | import org.apache.wayang.ml.training.GeneratableJob
-  | import org.apache.wayang.core.function.UDFComplexity
+  |/**
+  |  * Generated by DataFarm from the //#dataset#// schema.
+  |  *
+  |  * Usage: //#job_name#// <platforms: java | spark | java,spark> <datapath/>
+  |  */
+  |object //#job_name#// {
   |
-  | class //#job_name#// extends GeneratableJob {
+  |  def main(args: Array[String]): Unit = {
+  |    if (args.length < 2) {
+  |      System.err.println("Usage: //#job_name#// <platforms: java | spark | java,spark> <datapath/>")
+  |      sys.exit(1)
+  |    }
+  |    val wayangCtx = new WayangContext(new Configuration)
+  |    args(0).split(",").map(_.trim.toLowerCase).filter(_.nonEmpty).foreach {
+  |      case "java" => wayangCtx.register(Java.basicPlugin())
+  |      case "spark" => wayangCtx.register(Spark.basicPlugin())
+  |      case p => throw new IllegalArgumentException("Unknown platform '" + p + "' (expected java and/or spark)")
+  |    }
+  |    val planBuilder = new PlanBuilder(wayangCtx).withJobName("//#dataset#// (//#job_name#//)")
   |
-  |def buildPlan(args: Array[String]): DataQuanta[_] = {
-  | println("running Job: //#job_name#//")
+  |    val start = System.currentTimeMillis()
+  |    val rows = buildPlan(planBuilder, toUrl(args(1))).collect().size
+  |    println("//#job_name#//: " + rows + " rows in " + (System.currentTimeMillis() - start) + " ms")
+  |  }
   |
-  | val dateFormatter: DateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd")
-  | val plugins = Parameters.loadPlugins(args(0))
-  | val datapath = args(1) 
+  |  /** Wayang's local file system only reads file: URLs; a plain path is turned into one ending with '/'. */
+  |  def toUrl(path: String): String = {
+  |    val url = if (path.contains(":/")) path else new java.io.File(path).getAbsoluteFile.toURI.toString
+  |    if (url.endsWith("/")) url else url + "/"
+  |  }
   |
-  | implicit val configuration = new Configuration
-  | val wayangCtx = new WayangContext(configuration)
-  | plugins.foreach(wayangCtx.register)
-  | val planBuilder = new PlanBuilder(wayangCtx)
-  | .withJobName(s"TPC-H (${this.getClass.getSimpleName})")
+  |  /** Builds the plan and returns its final DataQuanta; nothing is executed. */
+  |  def buildPlan(planBuilder: PlanBuilder, datapath: String): DataQuanta[_] = {
   |
   |   //#body#//
   |
-  | }
-  |}  
+  |  }
+  |}
+  |
+  |//#parsers#//
   """.stripMargin
-
-  def saveExecPlanCode() = s"""saveExecutionPlan(execPlan, execTime, params, env)"""
-
-
-
-
 }

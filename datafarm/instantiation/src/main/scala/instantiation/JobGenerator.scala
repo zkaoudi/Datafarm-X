@@ -226,7 +226,7 @@ case class JobGenerator(abstractPlan: AbstractExecutionPlan, datasetOperatorMana
     val operatorCodes = _generate(abstractPlan: AbstractExecutionPlan, entryOpId: String)
     //println(operatorCodes)
     if(platform == "Wayang") {
-      datasetOperatorManager.wayangJob(operatorCodes.mkString("\n"), jobName, saveExecutionPlan, tableSequence.map(_.tableName).distinct)
+      datasetOperatorManager.wayangJob(operatorCodes.mkString("\n"), jobName, saveExecutionPlan, tableSequence)
     } else if (platform == "Spark") {
       datasetOperatorManager.sparkJob(operatorCodes.mkString("\n"), jobName, tableSequence)
     } else if (platform == "SQL" || platform == "SQLServer" || platform == "SQLServerFlat") {
