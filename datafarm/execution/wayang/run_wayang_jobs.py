@@ -44,17 +44,29 @@ def job_names(folder):
 def build(folder, sbt="sbt", log=print):
     """Compiles the jobs with sbt and returns their runtime classpath (also saved to target/ for --no-build)."""
     log(f"Compiling the jobs in {folder} with sbt ...")
-    p = subprocess.run([sbt, "-batch", "export Runtime/fullClasspath"], cwd=folder, check=True,
-                       stdout=subprocess.PIPE, universal_newlines=True)
-    lines = [l.strip() for l in p.stdout.splitlines() if l.strip()]
-    # sbt prints the classpath as the last line, without a log-level prefix
-    cp = next((l for l in reversed(lines) if not l.startswith("[") and os.pathsep in l + os.pathsep), None)
-    if not cp or "classes" not in cp:
+    p = subprocess.run([sbt, "-batch", "-Dsbt.color=false", "-Dsbt.supershell=false", "export Runtime/fullClasspath"],
+                       cwd=folder, check=True, stdout=subprocess.PIPE, universal_newlines=True)
+    cp = classpath_line(p.stdout)
+    if not cp:
+        lines = [l for l in p.stdout.splitlines() if l.strip()]
         raise SystemExit("Could not read the classpath from sbt's output:\n" + "\n".join(lines[-10:]))
     os.makedirs(os.path.join(folder, "target"), exist_ok=True)
     with open(os.path.join(folder, CLASSPATH_FILE), "w") as fh:
         fh.write(cp)
     return cp
+
+
+ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+
+
+def classpath_line(sbt_output):
+    """The classpath sbt's `export` prints: the last line, without a log-level prefix, that lists the
+    jobs' classes folder or jars (sbt may add colour codes and terminal control sequences around it)."""
+    for line in reversed(sbt_output.splitlines()):
+        line = ANSI.sub("", line).strip()
+        if line and not line.startswith("[") and ("classes" in line or ".jar" in line):
+            return line
+    return None
 
 
 def saved_classpath(folder):
