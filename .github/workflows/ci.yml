@@ -58,6 +58,20 @@ jobs:
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
           (cd training-data/Spark_TPCH/generated_jobs && sbt -batch package)
           (cd training-data/Spark_JOB/generated_jobs && sbt -batch package)
+      - name: Run the TPC-H Spark jobs on a small TPC-H dataset
+        if: matrix.python == '3.13'
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
+          git clone --depth 1 https://github.com/electrum/tpch-dbgen.git "$RUNNER_TEMP/dbgen"
+          make -C "$RUNNER_TEMP/dbgen" -s
+          mkdir -p "$RUNNER_TEMP/tpch"
+          (cd "$RUNNER_TEMP/dbgen" && DSS_PATH="$RUNNER_TEMP/tpch" ./dbgen -s 0.01 -f)
+          chmod 644 "$RUNNER_TEMP"/tpch/*.tbl
+          pip install pyspark==3.5.3
+          python datafarm/execution/spark/run_spark_jobs.py training-data/Spark_TPCH/generated_jobs \
+            --data "$RUNNER_TEMP/tpch" --no-build --master "local[2]" --conf spark.ui.enabled=false \
+            --plans "$RUNNER_TEMP/spark_plans" --output "$RUNNER_TEMP/spark_results.csv" --timeout 600
+          cat "$RUNNER_TEMP/spark_results.csv"
       - name: Same seed gives the same jobs
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
