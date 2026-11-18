@@ -147,7 +147,7 @@ change independently.
 | `datafarm/instantiation/` | **Instantiation** (Scala, sbt project). `instantiation.JobGenerator` turns abstract plans into jobs: `platform/{flink,wayang,spark,sql}` translates operators for each platform, `dataset/{tpch,job,imdb}` holds the schemas, joins, filters and statistics of each dataset. |
 | `datafarm/labeling/` | **Label forecasting** (Python): features, job sampling, the quantile-forest model and the Flink task-manager client used by `RunLabelForecaster.py`. |
 | `datafarm/datasets_metadata/` | Dataset metadata, one folder per dataset (`tpch/`, `job/`, `imdb/`): `MetaDataAnalyzer.py` computes the statistics the job generator uses (filter selectivities, distinct group-by values) from the data; `TableMetaData.py` holds the table schemas (and, for TPC-H and IMDB, table cardinalities). |
-| `datafarm/execution/` | **Execution**: tools that run generated jobs and collect their run times or plans, used for labeling. `flink/BuildAndSubmit.py` builds and submits Flink jobs; `spark/run_spark_jobs.py` builds and runs Spark jobs; `sql/` loads data into SQL Server and runs SQL jobs. Wayang has no runner yet; run its jobs yourself. |
+| `datafarm/execution/` | **Execution**: tools that run generated jobs and collect their run times or plans, used for labeling. `flink/BuildAndSubmit.py` builds and submits Flink jobs; `spark/run_spark_jobs.py` builds and runs Spark jobs; `wayang/run_wayang_jobs.py` compiles and runs Wayang jobs; `sql/` loads data into SQL Server and runs SQL jobs. |
 | `input-workloads/` | The input workloads abstract plans are learned from: `tpch/` (Flink execution plans of TPC-H queries) and `job/` (one plan per JOB query). |
 | `training-data/` | **Output**, one folder per experiment (`--experiment`, default `<platform>_<dataset>`): abstract plans, generated jobs, their execution plans and labels; see its [README](training-data/README.md). Not tracked by git. |
 | `experiments/` | Scripts and configurations of the DataFarm paper's experiments; not used by the pipeline. |
@@ -182,7 +182,20 @@ plan and returns its final `DataQuanta` without executing it; `main` runs it.
   Maven Central; Scala 2.12, Java 17), with `wayang-api-scala-java`, `wayang-java` and `wayang-spark`. To build
   against Wayang's main branch instead, run `mvn install -DskipTests` in a Wayang checkout, set `wayangVersion` in
   the `build.sbt` to its version (e.g. `1.1.2-SNAPSHOT`) and uncomment the `Resolver.mavenLocal` line.
-- **Running a job:**
+- **Running all jobs:** `datafarm/execution/wayang/run_wayang_jobs.py` compiles the jobs with sbt, then runs each
+  one in its own JVM and writes a CSV with, per job, the status (`ok`, `error` or `timeout`), the number of output
+  rows, the run time the job measures (building, optimizing and executing the Wayang plan, without JVM start-up),
+  the wall-clock time, and the error:
+
+  ```bash
+  python datafarm/execution/wayang/run_wayang_jobs.py training-data/<experiment>/generated_jobs \
+    --data /path/to/data/ --output results.csv [--platforms java|spark|java,spark] [--timeout 600]
+  ```
+
+  It needs Java 17 or later and sbt. `--platforms` lists the platforms Wayang may choose from (default `java`);
+  with several, Wayang's optimizer picks one per operator. `--jvm-option` passes JVM options (e.g.
+  `--jvm-option=-Xmx8g`), `--jobs` runs only some jobs, and `--no-build` reuses the classpath of the last build.
+- **Running one job:**
 
   ```bash
   cd training-data/<experiment>/generated_jobs
@@ -375,8 +388,9 @@ every job.
 
 Labeling is optional: the generated jobs and `generated_jobs_info.json` are usable on their own. It currently
 labels **Flink jobs on TPC-H** only, and submits them through `datafarm/execution/flink/BuildAndSubmit.py` to a
-running Flink 1.10 cluster. For Spark and SQL Server, `datafarm/execution/spark/run_spark_jobs.py` and
-`datafarm/execution/sql/run_sql_jobs.py` run the jobs and report their run times; run Wayang jobs yourself.
+running Flink 1.10 cluster. For Spark, Wayang and SQL Server, `datafarm/execution/spark/run_spark_jobs.py`,
+`datafarm/execution/wayang/run_wayang_jobs.py` and `datafarm/execution/sql/run_sql_jobs.py` run the jobs and report
+their run times.
 
 ```bash
 pip install -r requirements-labeling.txt   # Python 3.6-3.8: the labeling code needs scikit-learn 0.22
