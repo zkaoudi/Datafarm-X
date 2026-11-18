@@ -5,7 +5,7 @@ import instantiation.platform.spark.AbstractSparkTableOperatorManager
 import instantiation.dataset.AbstractTableOperatorManager
 import instantiation.platform.wayang.AbstractWayangTableOperatorManager
 import instantiation.JobInfoRecorder
-import instantiation.dataset.ParserCode
+import instantiation.dataset.{ParserCode, RecordOrder}
 import instantiation.platform.sql.SQLDialect
 
 
@@ -147,12 +147,12 @@ class JOBWayangTableOperatorManager(@(JsonIgnore @param @field @getter) protecte
 
   protected def jobKeyedReduceCode(inVarName: String, outVarName: String, field: String): String =
     s"""
-        |val $outVarName = $inVarName.reduceByKey(${keyUdf(field)}, (t1, t2) => t1)
+        |val $outVarName = $inVarName.reduceByKey(${keyUdf(field)}, ${RecordOrder.udf(ParserCode.Token)})
       """.stripMargin
 
   protected def jobGlobalReduceCode(inVarName: String, outVarName: String): String =
     s"""
-       |val $outVarName = $inVarName.reduce((x1, x2) => x1)
+       |val $outVarName = $inVarName.reduce(${RecordOrder.udf(ParserCode.Token)})
       """.stripMargin
 
   protected def jobSortCode(inVarName: String, outVarName: String, index: Int): String =

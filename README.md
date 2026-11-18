@@ -83,7 +83,7 @@ join2 AS (
   SELECT r.* FROM filter1 l JOIN source3 r ON l.id = r.company_id
 ),
 reduce4 AS (
-  SELECT MIN(id) AS id, MIN(movie_id) AS movie_id, MIN(company_id) AS company_id, MIN(company_type_id) AS company_type_id, MIN(note) AS note FROM join2 HAVING COUNT(*) > 0
+  SELECT id, movie_id, company_id, company_type_id, note FROM (SELECT *, ROW_NUMBER() OVER (ORDER BY id NULLS FIRST, movie_id NULLS FIRST, company_id NULLS FIRST, company_type_id NULLS FIRST, note NULLS FIRST) AS datafarm_rn FROM join2) ranked WHERE datafarm_rn = 1
 )
 SELECT * FROM reduce4;
 ```
@@ -159,6 +159,13 @@ To use the Python code from other projects (e.g. the abstract plan generator), i
 ---
 
 ## Platforms
+
+The same plan gives the same result on every platform. Joins keep the right-hand row. A group-by (or keyed Reduce)
+keeps one whole row per key and a global Reduce one row, so later operators see the table's columns: the smallest
+row, comparing all columns in order with nulls first. On Flink, Spark and Wayang this is the reduce function
+`minRecord` (generated into each job), which is associative and commutative as these engines require, so the kept row
+does not depend on the engine, the partitioning or the order in which rows arrive. SQL keeps the same row with
+`ROW_NUMBER()`.
 
 ### Flink
 
@@ -241,9 +248,9 @@ filters or join order.
   `planOutputDir`, it also writes `JobXvY.json` with the run time, row count and RDD lineage (`toDebugString`).
 - **Parsing:** each job parses its own input (object `JobXvYParsers` in the same file): TPC-H `.tbl` files or the
   JOB CSVs. The parsers are the same as in the Wayang jobs, so date filters behave the same on both.
-- **Semantics:** joins keep the right-hand tuple, as in the Wayang jobs. A Reduce pair in the abstract plan is a
-  keyed reduce on a group field for TPC-H (as in the Flink TPC-H jobs) and a global reduce for JOB (JOB's `MIN(...)`
-  aggregate).
+- **Semantics:** as on all platforms (see [Platforms](#platforms)), joins keep the right-hand tuple and reduces keep
+  the smallest row. A Reduce pair in the abstract plan is a keyed reduce on a group field for TPC-H (as in the Flink
+  TPC-H jobs) and a global reduce for JOB (JOB's `MIN(...)` aggregate).
 
 ### SQL
 
@@ -255,14 +262,15 @@ and DuckDB.
 - **Schema:** the generator writes `schema.sql` next to the jobs: the `CREATE TABLE` statements, with load commands
   for PostgreSQL and DuckDB in its header. TPC-H uses dbgen's column names (`l_orderkey`, ...). For JOB, the
   `CREATE TABLE` statements are those of JOB's `schema.sql` (`integer`, `character varying(n)` and `text`).
-- **Operators:** joins keep the right-hand rows, as in the dataflow jobs. A group-by (or keyed Reduce) returns one
-  row per key with `MIN` of each other column, and a global Reduce one row with `MIN` of each column. Maps and
-  partitions pass their input through, since their UDF cost has no SQL counterpart.
+- **Operators:** joins keep the right-hand rows, as in the dataflow jobs. A group-by (or keyed Reduce) returns the
+  smallest row per key and a global Reduce the smallest row (`ROW_NUMBER() OVER (... ORDER BY <all columns>) = 1`),
+  the same rows the dataflow jobs keep. Maps and partitions pass their input through, since their UDF cost has no
+  SQL counterpart.
 - **Optimization:** unlike Wayang, Flink and Spark, which run the generated plan as written, the database optimizes
   the query: it may reorder joins and push down filters. That suits training data for learned query optimizers.
-- **Result sizes:** the dataflow jobs keep an arbitrary row per group, whereas SQL takes the per-column minimum. Jobs
-  that join, filter or group the output of a group-by again can therefore return different result sizes than on
-  the dataflow platforms (10 of 80 TPC-H jobs in our tests, none of the JOB jobs).
+- **Result sizes:** the same as on the dataflow platforms. Text columns are compared with the database's collation,
+  which can differ from Java's order only between rows that agree on all earlier columns; TPC-H and JOB rows start
+  with their key columns, so this does not happen.
 
 ### SQL Server
 

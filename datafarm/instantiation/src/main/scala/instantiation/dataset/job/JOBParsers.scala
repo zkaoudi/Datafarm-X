@@ -1,5 +1,7 @@
 package instantiation.dataset.job
 
+import instantiation.dataset.RecordOrder
+
 /** Parse functions for the IMDB CSV files, generated into each JOB job (Wayang and Spark). */
 object JOBParsers {
 
@@ -77,6 +79,8 @@ object JOBParsers {
       "    while (pi < p.length && p.charAt(pi) == '%') pi += 1",
       "    pi == p.length",
       "  }",
+      "",
+      RecordOrder.code,
       ""
     ) ++ parsers :+ "}").mkString("\n")
   }

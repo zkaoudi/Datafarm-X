@@ -66,13 +66,13 @@ trait AbstractTableOperatorManager {
   def buildReduceCode2(inVarName: String, outVarName1: String, outVarName2: String, groupByField: String): String = {
     s"""
        |val $outVarName1 = $inVarName.groupBy($groupByField)
-       |val $outVarName2 = $outVarName1.reduce((x1, x2) => x1)
+       |val $outVarName2 = $outVarName1.reduce(${RecordOrder.udf()})
       """.stripMargin
   }
 
   def buildGroupByCode1(inVarName: String, outVarName: String, groupByField: String): String = {
     s"""
-       |val $outVarName = $inVarName.groupBy($groupByField).reduceGroup{v => v.reduce((x1,x2) => x1)}
+       |val $outVarName = $inVarName.groupBy($groupByField).reduceGroup{v => v.reduce(${RecordOrder.udf()})}
           """.stripMargin
   }
 
@@ -80,7 +80,7 @@ trait AbstractTableOperatorManager {
     //TODO check aggregation function complexity
     s"""
        |val $outVarName1 = $inVarName.groupBy($groupByField)
-       |val $outVarName2 = $outVarName1.reduce((lx, rx) => rx)
+       |val $outVarName2 = $outVarName1.reduce(${RecordOrder.udf()})
           """.stripMargin
   }
 
@@ -105,7 +105,7 @@ trait AbstractTableOperatorManager {
 
   def reduceCode1(inVarName: String, outVarName: String): String = {
     s"""
-       |val $outVarName = $inVarName.reduce((x1, x2) => x1)
+       |val $outVarName = $inVarName.reduce(${RecordOrder.udf()})
       """.stripMargin
   }
 

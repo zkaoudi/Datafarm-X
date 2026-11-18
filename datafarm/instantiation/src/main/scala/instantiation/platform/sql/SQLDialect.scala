@@ -19,6 +19,8 @@ sealed trait SQLDialect {
 
   /** A LIKE pattern (SQL wildcards `%` and `_`) as a string literal body, without quotes. */
   def likePattern(pattern: String): String
+  /** An ascending ORDER BY item with NULLs first (the order of the dataflow jobs' minRecord). */
+  def ascNullsFirst(column: String): String
 }
 
 object SQLDialect {
@@ -31,6 +33,7 @@ object SQLDialect {
     def orderByInCte(column: String): String = s"ORDER BY $column"
 
     def likePattern(pattern: String): String = pattern
+    def ascNullsFirst(column: String): String = s"$column NULLS FIRST"
   }
 
   object SQLServer extends SQLDialect {
@@ -43,5 +46,7 @@ object SQLDialect {
 
     // '[' would start a character class; [[] matches a literal '['
     def likePattern(pattern: String): String = pattern.replace("[", "[[]")
+    // T-SQL sorts NULLs first in ascending order and has no NULLS FIRST
+    def ascNullsFirst(column: String): String = column
   }
 }

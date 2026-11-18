@@ -1,6 +1,6 @@
 package instantiation.dataset.tpch
 
-import instantiation.dataset.AbstractTableOperatorManager
+import instantiation.dataset.{AbstractTableOperatorManager, RecordOrder}
 
 
 /**
@@ -41,6 +41,8 @@ object TPCHParsers {
       "    val p = s.trim.split('-')",
       "    p(0).toInt * 365 + p(1).toInt * 30 + p(2).toInt",
       "  }",
+      "",
+      RecordOrder.code,
       ""
     ) ++ parsers :+ "}").mkString("\n")
   }

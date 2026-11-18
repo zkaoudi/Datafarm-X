@@ -288,7 +288,7 @@ case class AbstractOperator(
                    |        .map(new UDF$inVar).withBroadcastSet(d, "${inVar}bData")
                    |        .map { x => x }
                    |        .groupBy(0)
-                   |        .reduce { (x1, x2) => x1 }
+                   |        .reduce { ${instantiation.dataset.RecordOrder.udf()} }
                    |        .map { x => x }
                    |      ${inVar}New
                    |    }
@@ -301,7 +301,7 @@ case class AbstractOperator(
                    |    val ${this.getVariableName()} = ${inVar}bData.iterate($nIteration) { d =>
                    |      val ${inVar}New = ${inVar}
                    |        .map(new UDF${inVar}).withBroadcastSet(d, "${inVar}bData")
-                   |        .reduce { (x1, x2) => x1}
+                   |        .reduce { ${instantiation.dataset.RecordOrder.udf()} }
                    |        .map {x => x}
                    |      ${inVar}New
                    |    }

@@ -1,6 +1,7 @@
 package instantiation.platform.flink
 
 import instantiation.AbstractJob
+import instantiation.dataset.RecordOrder
 
 import scala.reflect.runtime.currentMirror
 import scala.tools.reflect.ToolBox
@@ -20,6 +21,7 @@ case class AbstractFlinkJob(jobBody:String, jobName:String, saveExecutionPlan:Bo
     AbstractFlinkJob.JOB_TEMPLATE
       .replace("//#job_name#//", this.jobName)
       .replace("//#body#//", this.jobBody)
+      .replace("//#record_order#//", RecordOrder.code.stripPrefix("  "))
       .replace("//#save_plan#//", if (saveExecutionPlan) AbstractFlinkJob.saveExecPlanCode() else "")
   }
 
@@ -103,6 +105,8 @@ object AbstractFlinkJob {
        |  import scala.collection.JavaConverters._
        |
        |  val dateFormatter: DateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd")
+       |
+       |  //#record_order#//
        |
        |  def run(params: Map[String, String]): Unit = {
        |    val env = if (params.getOrElse("local", "false") == "true") {
