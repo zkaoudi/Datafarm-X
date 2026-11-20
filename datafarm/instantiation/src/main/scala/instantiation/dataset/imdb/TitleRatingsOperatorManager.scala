@@ -1,6 +1,6 @@
 package instantiation.dataset.imdb
 
-import instantiation.dataset.AbstractTableOperatorManager
+import instantiation.dataset.{AbstractTableOperatorManager, RecordOrder}
 import instantiation.dataset.utils.getElementBySeed
 
 
@@ -57,7 +57,7 @@ case class TitleRatingsOperatorManager() extends AbstractTableOperatorManager {
 
   def buildGroupByCodeCustom1(inVarName: String, outVarName: String, groupByField: String): String = {
     s"""
-       |val $outVarName = $inVarName.map(x => x.copy(_2=x._2.toInt)).groupBy(1).reduceGroup{v => v.reduce((x1,x2) => x1)}
+       |val $outVarName = $inVarName.map(x => x.copy(_2=x._2.toInt)).groupBy(1).reduceGroup{v => v.reduce(${RecordOrder.udf()})}
           """.stripMargin
   }
 
@@ -65,7 +65,7 @@ case class TitleRatingsOperatorManager() extends AbstractTableOperatorManager {
     //TODO check aggregation function complexity
     s"""
        |val $outVarName1 = $inVarName.map(x => x.copy(_2=x._2.toInt)).groupBy($groupByField)
-       |val $outVarName2 = $outVarName1.reduce((lx, rx) => rx)
+       |val $outVarName2 = $outVarName1.reduce(${RecordOrder.udf()})
           """.stripMargin
   }
 

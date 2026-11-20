@@ -2,7 +2,7 @@ package instantiation.platform.wayang
 
 import instantiation.dataset.AbstractTableOperatorManager
 import instantiation.dataset.JoinRelation
-import instantiation.dataset.ParserCode
+import instantiation.dataset.{ParserCode, RecordOrder}
 import instantiation.dataset.utils.getElementBySeed
 
 
@@ -53,7 +53,7 @@ trait AbstractWayangTableOperatorManager extends AbstractTableOperatorManager {
   /** groupBy(field).reduce: keyed reduce on the group field (1-based tuple position). */
   override def buildReduceCode2(inVarName: String, outVarName1: String, outVarName2: String, groupByField: String): String = {
       s"""
-       |val $outVarName2 = $inVarName.reduceByKey(_._$groupByField, (x1, x2) => x1)
+       |val $outVarName2 = $inVarName.reduceByKey(_._$groupByField, ${RecordOrder.udf(ParserCode.Token)})
       """.stripMargin
   }
 
@@ -62,10 +62,8 @@ trait AbstractWayangTableOperatorManager extends AbstractTableOperatorManager {
        val field = groupByField
 
         s"""
-       |val $outVarName = $inVarName.reduceByKey(_._$field, (t1,t2) => t1)
+       |val $outVarName = $inVarName.reduceByKey(_._$field, ${RecordOrder.udf(ParserCode.Token)})
           """.stripMargin
-
-         // groupByKey(_._$groupByField).reduceGroup{v => v.reduce((x1,x2) => x1)}
   }
 
   override def buildGroupByCode2(inVarName: String, outVarName1: String, outVarName2: String, groupByField: String): String = {
@@ -74,7 +72,7 @@ trait AbstractWayangTableOperatorManager extends AbstractTableOperatorManager {
    val field = groupByField
 
         s"""
-       |val $outVarName2 = $inVarName.reduceByKey(_._$field, (t1,t2) => t1)
+       |val $outVarName2 = $inVarName.reduceByKey(_._$field, ${RecordOrder.udf(ParserCode.Token)})
           """.stripMargin
   }
 
@@ -96,7 +94,7 @@ trait AbstractWayangTableOperatorManager extends AbstractTableOperatorManager {
 
   override def reduceCode1(inVarName: String, outVarName: String): String = {
     s"""
-       |val $outVarName = $inVarName.reduce((x1, x2) => x1)
+       |val $outVarName = $inVarName.reduce(${RecordOrder.udf(ParserCode.Token)})
       """.stripMargin
   }
 

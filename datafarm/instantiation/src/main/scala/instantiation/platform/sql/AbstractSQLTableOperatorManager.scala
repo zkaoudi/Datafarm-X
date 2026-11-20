@@ -14,8 +14,9 @@ import instantiation.dataset.utils.getElementBySeed
   *  - Data Source: `SELECT * FROM table`
   *  - Filter: `SELECT * FROM in WHERE condition`
   *  - Join: `SELECT r.* FROM lx l JOIN rx r ON l.a = r.b` (keeps the right-hand rows, like the dataflow jobs)
-  *  - Group by / keyed Reduce: one row per key, `SELECT key, MIN(c) AS c, ... GROUP BY key`
-  *  - global Reduce: one row, `SELECT MIN(c) AS c, ... HAVING COUNT(*) > 0` (no row for empty input)
+  *  - Group by / keyed Reduce: one row per key, the row the dataflow jobs keep: the smallest row
+  *    comparing all columns in order, nulls first (`ROW_NUMBER() OVER (PARTITION BY key ORDER BY c1, c2, ...) = 1`)
+  *  - global Reduce: the smallest row of the input (`ROW_NUMBER() OVER (ORDER BY c1, c2, ...) = 1`; no row for empty input)
   *  - Sort-Partition: `SELECT * FROM in ORDER BY column`
   *  - Map, Partition: pass-through (`SELECT * FROM in`); their UDF cost has no SQL counterpart
   *
@@ -44,14 +45,28 @@ trait AbstractSQLTableOperatorManager extends AbstractTableOperatorManager {
   def sqlFilterCode(inVarName: String, outVarName: String, condition: String): String =
     sqlCte(outVarName, s"SELECT * FROM $inVarName WHERE $condition")
 
-  /** One row per value of `keyExpr` (normally the column `keyColumn` itself); the other columns keep their minimum. */
-  def sqlKeyedReduceCode(inVarName: String, outVarName: String, keyColumn: String, keyExpr: String): String = {
-    val select = sqlColumns.map(c => if (c == keyColumn && keyExpr == keyColumn) c else s"MIN($c) AS $c")
-    sqlCte(outVarName, s"SELECT ${select.mkString(", ")} FROM $inVarName GROUP BY $keyExpr")
+  /**
+    * The smallest row of each partition (or of the whole input), comparing all columns in order with
+    * NULLs first: the row the dataflow jobs keep with RecordOrder's minRecord. Text columns are
+    * compared with the database's collation, which can differ from Java's order only between rows
+    * that agree on all earlier columns (TPC-H and JOB rows start with their key columns).
+    */
+  private def sqlFirstRowCode(inVarName: String, outVarName: String, partitionBy: Option[String]): String = {
+    val cols = sqlColumns
+    val over = partitionBy.map(k => s"PARTITION BY $k ").getOrElse("") +
+      "ORDER BY " + cols.map(sqlDialect.ascNullsFirst).mkString(", ")
+    sqlCte(outVarName,
+      s"SELECT ${cols.mkString(", ")} FROM (SELECT *, ROW_NUMBER() OVER ($over) AS datafarm_rn FROM $inVarName) ranked " +
+        "WHERE datafarm_rn = 1")
   }
 
+  /** One row per value of `keyExpr` (normally the column `keyColumn` itself): its smallest row. */
+  def sqlKeyedReduceCode(inVarName: String, outVarName: String, keyColumn: String, keyExpr: String): String =
+    sqlFirstRowCode(inVarName, outVarName, Some(keyExpr))
+
+  /** The smallest row of the input; no row for an empty input. */
   def sqlGlobalReduceCode(inVarName: String, outVarName: String): String =
-    sqlCte(outVarName, s"SELECT ${sqlColumns.map(c => s"MIN($c) AS $c").mkString(", ")} FROM $inVarName HAVING COUNT(*) > 0")
+    sqlFirstRowCode(inVarName, outVarName, None)
 
   def sqlSortCode(inVarName: String, outVarName: String, column: String): String =
     sqlCte(outVarName, s"SELECT * FROM $inVarName ${sqlDialect.orderByInCte(column)}")

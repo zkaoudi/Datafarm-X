@@ -107,6 +107,15 @@ jobs:
               --output "$RUNNER_TEMP/wayang_results_$platforms.csv"
             cat "$RUNNER_TEMP/wayang_results_$platforms.csv"
           done
+      - name: Same row counts on Spark, Wayang and SQL (DuckDB)
+        if: matrix.python == '3.13'
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
+          python .github/scripts/compare_row_counts.py \
+            spark="$RUNNER_TEMP/spark_results.csv" \
+            wayang-java="$RUNNER_TEMP/wayang_results_java.csv" \
+            wayang-spark="$RUNNER_TEMP/wayang_results_spark.csv" \
+            --sql-jobs training-data/SQL_TPCH/generated_jobs --data "$RUNNER_TEMP/tpch"
       - name: Report the end of the log
         if: failure()
         run: |

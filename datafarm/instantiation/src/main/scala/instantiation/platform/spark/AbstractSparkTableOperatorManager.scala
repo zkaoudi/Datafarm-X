@@ -3,7 +3,7 @@ package instantiation.platform.spark
 import instantiation.dataset.AbstractTableOperatorManager
 import instantiation.platform.wayang.AbstractWayangTableOperatorManager
 import instantiation.dataset.JoinRelation
-import instantiation.dataset.ParserCode
+import instantiation.dataset.{ParserCode, RecordOrder}
 import instantiation.dataset.utils.getElementBySeed
 
 
@@ -29,13 +29,13 @@ trait AbstractSparkTableOperatorManager extends AbstractTableOperatorManager {
 
   def sparkKeyedReduceCode(inVarName: String, outVarName: String, keyUdf: String): String =
     s"""
-       |val $outVarName = $inVarName.keyBy($keyUdf).reduceByKey((t1, t2) => t1).values
+       |val $outVarName = $inVarName.keyBy($keyUdf).reduceByKey(${RecordOrder.udf(ParserCode.Token)}).values
       """.stripMargin
 
   /** Reduces everything to one element without leaving the RDD world (RDD.reduce is an action). */
   def sparkGlobalReduceCode(inVarName: String, outVarName: String): String =
     s"""
-       |val $outVarName = $inVarName.map(x => ((), x)).reduceByKey((x1, x2) => x1, 1).values
+       |val $outVarName = $inVarName.map(x => ((), x)).reduceByKey(${RecordOrder.udf(ParserCode.Token)}, 1).values
       """.stripMargin
 
   def sparkSortCode(inVarName: String, outVarName: String, index: Int): String =
