@@ -44,7 +44,11 @@ def generate_jobs():
     if shutil.which("sbt") is None:
         sys.exit("Error: sbt not found. The job generator is a Scala project and needs sbt (https://www.scala-sbt.org/).")
     env = dict(os.environ, DATAFARM_SQLSERVER_TABLE_PREFIX=CONFIG.SQLSERVER_TABLE_PREFIX)
-    main = " ".join(["runMain instantiation.JobGenerator", str(CONFIG.N_JOBS), str(CONFIG.N_VERSIONS), CONFIG.DATA_MANAGER,
+    # datasets defined by a folder are passed to the generator as the folder (its catalog.json)
+    dataset = CONFIG.DATASET_FOLDER or CONFIG.DATA_MANAGER
+    if " " in dataset:
+        sys.exit(f"Error: the dataset path '{dataset}' contains a space, which the sbt command line does not allow.")
+    main = " ".join(["runMain instantiation.JobGenerator", str(CONFIG.N_JOBS), str(CONFIG.N_VERSIONS), dataset,
                      CONFIG.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER, CONFIG.GENERATED_JOB_FOLDER, str(CONFIG.JOB_SEED),
                      CONFIG.TARGET_PLATFORM])
     run(["sbt", main], cwd=CONFIG.JOB_GENERATOR, env=env, what="Job generation")
@@ -80,12 +84,14 @@ def create_project_folders():
 
 
 def parse_args(argv=None):
-    platforms = sorted({p for ps in CONFIG.SUPPORTED_PLATFORMS.values() for p in ps})
+    platforms = sorted({p for ps in CONFIG.SUPPORTED_PLATFORMS.values() for p in ps} | set(CONFIG.DATASET_PLATFORMS))
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--platform", choices=platforms, default=CONFIG.TARGET_PLATFORM,
                     help=f"target platform of the jobs (default: {CONFIG.TARGET_PLATFORM})")
-    ap.add_argument("--dataset", choices=sorted(CONFIG.SUPPORTED_PLATFORMS), default=CONFIG.DATA_MANAGER,
-                    help=f"dataset the jobs run on (default: {CONFIG.DATA_MANAGER})")
+    datasets = sorted(CONFIG.SUPPORTED_PLATFORMS) + [d for d in CONFIG.datasets() if d not in CONFIG.SUPPORTED_PLATFORMS]
+    ap.add_argument("--dataset", default=CONFIG.DATA_MANAGER,
+                    help=f"dataset the jobs run on: {', '.join(datasets)}, or the path of a dataset folder with a "
+                         f"catalog.json (default: {CONFIG.DATA_MANAGER})")
     ap.add_argument("--plans", type=int, default=CONFIG.N_JOBS,
                     help=f"number of abstract plans (default: {CONFIG.N_JOBS})")
     ap.add_argument("--versions", type=int, default=CONFIG.N_VERSIONS,
@@ -99,7 +105,10 @@ def parse_args(argv=None):
     ap.add_argument("--table-prefix", default=CONFIG.SQLSERVER_TABLE_PREFIX,
                     help='SQLServerFlat only: prefix of table names, e.g. "tpch.dbo." (default: none)')
     args = ap.parse_args(argv)
-    supported = CONFIG.SUPPORTED_PLATFORMS[args.dataset]
+    supported = CONFIG.platforms_of(args.dataset)
+    if supported is None:
+        ap.error(f"unknown dataset {args.dataset}: not one of {', '.join(datasets)} and no folder with a catalog.json "
+                 "(create one with: python -m datafarm.datasets.add_dataset datasets/<name>)")
     if args.platform not in supported:
         ap.error(f"dataset {args.dataset} supports the platforms {', '.join(supported)}, not {args.platform}")
     if args.plans < 1 or args.versions < 1:

@@ -31,11 +31,19 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install Python requirements
         run: pip install -r requirements.txt duckdb
+      - name: The committed dataset catalogs are what add_dataset derives
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
+          cp -r datasets/example "$RUNNER_TEMP/example"
+          python -m datafarm.datasets.add_dataset "$RUNNER_TEMP/example" --data datasets/example/data
+          python .github/scripts/same_catalog.py datasets/example "$RUNNER_TEMP/example"
       - name: Generate jobs for every platform and dataset
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
           for combo in TPCH:Flink TPCH:Wayang TPCH:Spark TPCH:SQL TPCH:SQLServer TPCH:SQLServerFlat \
-                       JOB:Wayang JOB:Spark JOB:SQL JOB:SQLServer; do
+                       JOB:Wayang JOB:Spark JOB:SQL JOB:SQLServer \
+                       job:Flink job:Wayang job:Spark job:SQL job:SQLServer \
+                       example:Flink example:Wayang example:Spark example:SQL example:SQLServer; do
             dataset=${combo%%:*}; platform=${combo#*:}
             echo "::group::$platform on $dataset"
             python RunGenerator.py --dataset $dataset --platform $platform --plans 5 --versions 2
@@ -50,14 +58,16 @@ jobs:
       - name: Check the SQL jobs with DuckDB
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
-          python .github/scripts/check_sql_jobs.py training-data/SQL_TPCH/generated_jobs
-          python .github/scripts/check_sql_jobs.py training-data/SQL_JOB/generated_jobs
+          for dataset in TPCH JOB job example; do
+            python .github/scripts/check_sql_jobs.py training-data/SQL_$dataset/generated_jobs
+          done
       - name: Compile the Spark jobs
         if: matrix.python == '3.13'
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
-          (cd training-data/Spark_TPCH/generated_jobs && sbt -batch package)
-          (cd training-data/Spark_JOB/generated_jobs && sbt -batch package)
+          for dataset in TPCH JOB job example; do
+            (cd training-data/Spark_$dataset/generated_jobs && sbt -batch package)
+          done
       - name: Run the TPC-H Spark jobs on a small TPC-H dataset
         if: matrix.python == '3.13'
         run: |
@@ -72,11 +82,27 @@ jobs:
             --data "$RUNNER_TEMP/tpch" --no-build --master "local[2]" --conf spark.ui.enabled=false \
             --plans "$RUNNER_TEMP/spark_plans" --output "$RUNNER_TEMP/spark_results.csv" --timeout 600
           cat "$RUNNER_TEMP/spark_results.csv"
+      - name: Run the example Spark jobs
+        if: matrix.python == '3.13'
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
+          python datafarm/execution/spark/run_spark_jobs.py training-data/Spark_example/generated_jobs \
+            --data datasets/example/data --no-build --master "local[2]" --conf spark.ui.enabled=false \
+            --output "$RUNNER_TEMP/example_spark.csv" --timeout 600
+          cat "$RUNNER_TEMP/example_spark.csv"
+      - name: Compile the Flink jobs and run the example Flink jobs
+        if: matrix.python == '3.13'
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
+          python datafarm/execution/flink/run_flink_jobs.py training-data/Flink_job/generated_jobs --build-only
+          python datafarm/execution/flink/run_flink_jobs.py training-data/Flink_example/generated_jobs \
+            --data datasets/example/data --timeout 600 --output "$RUNNER_TEMP/example_flink.csv"
+          cat "$RUNNER_TEMP/example_flink.csv"
       - name: Same seed gives the same jobs
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
-          python RunGenerator.py --dataset JOB --platform SQL --plans 5 --versions 2 --experiment again
-          diff -r training-data/SQL_JOB/generated_jobs training-data/again/generated_jobs
+          python RunGenerator.py --dataset job --platform SQL --plans 5 --versions 2 --experiment again
+          diff -r training-data/SQL_job/generated_jobs training-data/again/generated_jobs
       # Apache Wayang 1.1 is built for Java 17; last, since the generator (Scala 2.11) needs Java 11
       - uses: actions/setup-java@v4
         if: matrix.python == '3.13'
@@ -88,8 +114,9 @@ jobs:
         if: matrix.python == '3.13'
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
-          (cd training-data/Wayang_TPCH/generated_jobs && sbt -batch compile)
-          (cd training-data/Wayang_JOB/generated_jobs && sbt -batch compile)
+          for dataset in TPCH JOB job example; do
+            (cd training-data/Wayang_$dataset/generated_jobs && sbt -batch compile)
+          done
       - name: Run the TPC-H Wayang jobs on a small TPC-H dataset
         if: matrix.python == '3.13'
         run: |
@@ -106,8 +133,12 @@ jobs:
               --data "$RUNNER_TEMP/tpch" --platforms $platforms --timeout 600 \
               --output "$RUNNER_TEMP/wayang_results_$platforms.csv"
             cat "$RUNNER_TEMP/wayang_results_$platforms.csv"
+            python datafarm/execution/wayang/run_wayang_jobs.py training-data/Wayang_example/generated_jobs \
+              --data datasets/example/data --platforms $platforms --timeout 600 \
+              --output "$RUNNER_TEMP/example_wayang_$platforms.csv"
+            cat "$RUNNER_TEMP/example_wayang_$platforms.csv"
           done
-      - name: Run the TPC-H SQL jobs on DuckDB and PostgreSQL
+      - name: Run the TPC-H and example SQL jobs on DuckDB and PostgreSQL
         if: matrix.python == '3.13'
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
@@ -122,7 +153,16 @@ jobs:
             python datafarm/execution/sql/run_sql_jobs.py training-data/SQL_TPCH/generated_jobs --engine $engine \
               --timeout 600 --output "$RUNNER_TEMP/sql_results_$engine.csv"
           done
-      - name: Same row counts on Spark, Wayang, DuckDB and PostgreSQL
+          export DATAFARM_DUCKDB="$RUNNER_TEMP/example.duckdb"
+          sudo -u postgres psql -c "CREATE DATABASE example"
+          export DATAFARM_POSTGRES="host=localhost user=postgres password=postgres dbname=example"
+          for engine in duckdb postgres; do
+            python datafarm/execution/sql/load_sql_data.py --engine $engine --dataset example --data datasets/example/data \
+              --schema training-data/SQL_example/generated_jobs/schema.sql
+            python datafarm/execution/sql/run_sql_jobs.py training-data/SQL_example/generated_jobs --engine $engine \
+              --timeout 600 --output "$RUNNER_TEMP/example_$engine.csv"
+          done
+      - name: Same row counts on every platform (TPC-H, then the example dataset)
         if: matrix.python == '3.13'
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
@@ -132,6 +172,13 @@ jobs:
             wayang-spark="$RUNNER_TEMP/wayang_results_spark.csv" \
             sql-duckdb="$RUNNER_TEMP/sql_results_duckdb.csv" \
             sql-postgres="$RUNNER_TEMP/sql_results_postgres.csv"
+          python .github/scripts/compare_row_counts.py \
+            spark="$RUNNER_TEMP/example_spark.csv" \
+            flink="$RUNNER_TEMP/example_flink.csv" \
+            wayang-java="$RUNNER_TEMP/example_wayang_java.csv" \
+            wayang-spark="$RUNNER_TEMP/example_wayang_spark.csv" \
+            sql-duckdb="$RUNNER_TEMP/example_duckdb.csv" \
+            sql-postgres="$RUNNER_TEMP/example_postgres.csv"
       - name: Report the end of the log
         if: failure()
         run: |

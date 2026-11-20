@@ -1,7 +1,9 @@
 package instantiation.dataset
 
 import instantiation.AbstractJob
+import instantiation.dataset.generic.{Catalog, GenericDatasetOperatorManager}
 import instantiation.dataset.imdb.IMDBKDatasetOperatorManager
+import instantiation.platform.flink.AbstractFlinkJob
 import instantiation.dataset.job.JOBDatasetOperatorManager
 import instantiation.dataset.tpch.TPCHDatasetOperatorManager
 import instantiation.dataset.utils.getElementBySeed
@@ -52,6 +54,10 @@ trait AbstractDatasetOperatorManager {
   var platform : String = "Flink"
 
   def getTableOperatorManager(s: String,p: String): AbstractTableOperatorManager
+
+  /** Wraps the generated operator code into a Flink job (an sbt project per job). */
+  def flinkJob(jobBody: String, jobName: String, saveExecutionPlan: Boolean, tables: Seq[AbstractTableOperatorManager]): AbstractJob =
+    AbstractFlinkJob(jobBody, jobName, saveExecutionPlan = saveExecutionPlan)
 
   /**
     * Wraps the generated operator code into a Wayang job, including the parsers for `tables`.
@@ -164,6 +170,7 @@ object AbstractDatasetOperatorManager {
     else if (s == "JOB")
       new JOBDatasetOperatorManager(p)
     else
-      throw new Exception(s"Can not find Dataset Operator Manger '$s'.")
+      // any dataset defined by a catalog: datasets/<name>/catalog.json, its folder or the file itself
+      new GenericDatasetOperatorManager(Catalog.load(s), p)
   }
 }

@@ -1,0 +1,480 @@
+{
+  "name": "example",
+  "about": "A small web shop with customers, products, orders, order items and reviews: the example of how to add a dataset to DataFarm. The data in data/ is synthetic.",
+  "format": {
+    "extension": ".csv",
+    "delimiter": ",",
+    "quote": "\"",
+    "escape": null,
+    "null": "",
+    "header": true,
+    "encoding": "utf-8"
+  },
+  "measuredOn": {
+    "dataDir": "datasets/example/data",
+    "date": "2026-11-20"
+  },
+  "tables": [
+    {
+      "name": "customers",
+      "file": "customers.csv",
+      "header": "id,name,country,segment,signup_date",
+      "rows": 300,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "VARCHAR(64)"
+        },
+        {
+          "name": "country",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "CHAR(2)"
+        },
+        {
+          "name": "segment",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "VARCHAR(16)"
+        },
+        {
+          "name": "signup_date",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "DATE"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "segment",
+          "distinct": 3
+        },
+        {
+          "field": "country",
+          "distinct": 8
+        }
+      ],
+      "filters": [
+        {
+          "field": "segment",
+          "op": "=",
+          "value": "business",
+          "selectivity": 0.29,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "A%",
+          "selectivity": 0.09,
+          "queries": 1
+        },
+        {
+          "field": "country",
+          "op": "=",
+          "value": "DK",
+          "selectivity": 0.13666667,
+          "queries": 1
+        },
+        {
+          "field": "signup_date",
+          "op": "between",
+          "value": [
+            "2022-01-01",
+            "2022-12-31"
+          ],
+          "selectivity": 0.2,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "products",
+      "file": "products.csv",
+      "header": "id,name,category,price,supplier",
+      "rows": 80,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "VARCHAR(64)"
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "VARCHAR(16)"
+        },
+        {
+          "name": "price",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "DECIMAL(8, 2)",
+          "ordered": false
+        },
+        {
+          "name": "supplier",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "VARCHAR(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "supplier",
+          "distinct": 5
+        },
+        {
+          "field": "category",
+          "distinct": 6
+        }
+      ],
+      "filters": [
+        {
+          "field": "category",
+          "op": "in",
+          "value": [
+            "books",
+            "games"
+          ],
+          "selectivity": 0.275,
+          "queries": 1
+        },
+        {
+          "field": "category",
+          "op": "=",
+          "value": "toys",
+          "selectivity": 0.175,
+          "queries": 1
+        },
+        {
+          "field": "category",
+          "op": "=",
+          "value": "garden",
+          "selectivity": 0.2125,
+          "queries": 1
+        },
+        {
+          "field": "supplier",
+          "op": "is null",
+          "value": null,
+          "selectivity": 0.1875,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "orders",
+      "file": "orders.csv",
+      "header": "id,customer_id,order_date,status,note",
+      "rows": 1500,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "customer_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "order_date",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "DATE"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "VARCHAR(12)"
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "TEXT"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "customer_id",
+          "distinct": 298
+        },
+        {
+          "field": "status",
+          "distinct": 5
+        },
+        {
+          "field": "note",
+          "distinct": 5
+        }
+      ],
+      "filters": [
+        {
+          "field": "status",
+          "op": "=",
+          "value": "shipped",
+          "selectivity": 0.34866667,
+          "queries": 1
+        },
+        {
+          "field": "order_date",
+          "op": ">=",
+          "value": "2024-01-01",
+          "selectivity": 0.33333333,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "is not null",
+          "value": null,
+          "selectivity": 0.61533333,
+          "queries": 1
+        },
+        {
+          "field": "status",
+          "op": "in",
+          "value": [
+            "returned",
+            "cancelled"
+          ],
+          "selectivity": 0.152,
+          "queries": 1
+        },
+        {
+          "field": "status",
+          "op": "!=",
+          "value": "cancelled",
+          "selectivity": 0.922,
+          "queries": 1
+        },
+        {
+          "field": "status",
+          "op": "=",
+          "value": "delivered",
+          "selectivity": 0.428,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "order_items",
+      "file": "order_items.csv",
+      "header": "order_id,line_no,product_id,quantity,discount_code",
+      "rows": 4522,
+      "columns": [
+        {
+          "name": "order_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "line_no",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "product_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "quantity",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "discount_code",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "VARCHAR(8)"
+        }
+      ],
+      "primaryKey": [
+        "order_id",
+        "line_no"
+      ],
+      "groupFields": [
+        {
+          "field": "order_id",
+          "distinct": 1500
+        },
+        {
+          "field": "product_id",
+          "distinct": 80
+        },
+        {
+          "field": "discount_code",
+          "distinct": 4
+        },
+        {
+          "field": "line_no",
+          "distinct": 5
+        }
+      ],
+      "filters": [
+        {
+          "field": "quantity",
+          "op": ">",
+          "value": 3,
+          "selectivity": 0.62140646,
+          "queries": 1
+        },
+        {
+          "field": "discount_code",
+          "op": "is null",
+          "value": null,
+          "selectivity": 0.50022114,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "reviews",
+      "file": "reviews.csv",
+      "header": "id,product_id,customer_id,rating,body",
+      "rows": 600,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "product_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "customer_id",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "rating",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "INTEGER"
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "TEXT"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "product_id",
+          "distinct": 80
+        },
+        {
+          "field": "customer_id",
+          "distinct": 240
+        },
+        {
+          "field": "rating",
+          "distinct": 5
+        },
+        {
+          "field": "body",
+          "distinct": 7
+        }
+      ],
+      "filters": [
+        {
+          "field": "rating",
+          "op": ">=",
+          "value": 4,
+          "selectivity": 0.41333333,
+          "queries": 1
+        },
+        {
+          "field": "body",
+          "op": "like",
+          "value": "%great%",
+          "selectivity": 0.38166667,
+          "queries": 1
+        },
+        {
+          "field": "rating",
+          "op": "=",
+          "value": 1,
+          "selectivity": 0.21,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    }
+  ],
+  "joins": [
+    {
+      "left": "orders.customer_id",
+      "right": "customers.id",
+      "queries": 5
+    },
+    {
+      "left": "products.id",
+      "right": "order_items.product_id",
+      "queries": 4
+    },
+    {
+      "left": "order_items.order_id",
+      "right": "orders.id",
+      "queries": 4
+    },
+    {
+      "left": "reviews.product_id",
+      "right": "products.id",
+      "queries": 2
+    },
+    {
+      "left": "reviews.customer_id",
+      "right": "customers.id",
+      "queries": 2
+    }
+  ]
+}

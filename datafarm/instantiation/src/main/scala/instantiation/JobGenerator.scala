@@ -232,7 +232,7 @@ case class JobGenerator(abstractPlan: AbstractExecutionPlan, datasetOperatorMana
     } else if (platform == "SQL" || platform == "SQLServer" || platform == "SQLServerFlat") {
       datasetOperatorManager.sqlJob(operatorCodes.mkString("\n"), jobName, tableSequence)
     } else {
-      AbstractFlinkJob(operatorCodes.mkString("\n"), jobName, saveExecutionPlan = saveExecutionPlan)
+      datasetOperatorManager.flinkJob(operatorCodes.mkString("\n"), jobName, saveExecutionPlan, tableSequence)
     }
   }
 }
@@ -252,7 +252,7 @@ object JobGenerator {
 
       )
     else
-      throw new Exception("Expected arguments: <nJobs> <nVersions> <dataManager: TPCH|IMDB|JOB> <abstractPlansSource> <genJobsDest> [jobSeed] [targetPlatform: Flink|Wayang|Spark|SQL|SQLServer|SQLServerFlat]")
+      throw new Exception("Expected arguments: <nJobs> <nVersions> <dataManager: TPCH|IMDB|JOB|<dataset folder or catalog.json>> <abstractPlansSource> <genJobsDest> [jobSeed] [targetPlatform: Flink|Wayang|Spark|SQL|SQLServer|SQLServerFlat]")
     params
   }
 
