@@ -1,6 +1,6 @@
 """
 Schemas of the 21 JOB (Join Order Benchmark) tables of the IMDB dump, used by MetaDataAnalyzer.py and by the
-SQL Server loader (datafarm/execution/sql/load_sqlserver.py).
+SQL data loader (datafarm/execution/sql/load_sql_data.py).
 
 Filter predicates, selectivities, distinct counts and row counts are in
 datafarm/instantiation/src/main/resources/job/job_catalog.json, which the job generator reads.

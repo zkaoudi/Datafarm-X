@@ -115,7 +115,7 @@ object TPCHSql {
        |-- Load the .tbl files with BULK INSERT (paths as seen by the SQL Server process), e.g.
        |--   BULK INSERT lineitem FROM '/data/lineitem.tbl' WITH (FIELDTERMINATOR = '|', ROWTERMINATOR = '|\\n', TABLOCK);
        |-- or from any client with
-       |--   python datafarm/execution/sql/load_sqlserver.py --dataset TPCH --data <tbl_dir> --connection "<ODBC connection string>"
+       |--   python datafarm/execution/sql/load_sql_data.py --engine sqlserver --dataset TPCH --data <tbl_dir> --connection "<ODBC connection string>"
        |
        |${creates.mkString("\n\n")}
        |""".stripMargin
@@ -131,7 +131,9 @@ object TPCHSql {
       s"CREATE TABLE ${t.tableName} (\n${cols.mkString(",\n")}\n);"
     }
     s"""-- TPC-H tables used by the generated SQL jobs (column names as in dbgen's dss.ddl).
-       |-- Load the .tbl files, e.g. in PostgreSQL after removing the trailing '|' of each line:
+       |-- Load the .tbl files with
+       |--   python datafarm/execution/sql/load_sql_data.py --engine postgres|duckdb --dataset TPCH --data <tbl_dir> --connection "<connection>"
+       |-- or e.g. in PostgreSQL after removing the trailing '|' of each line:
        |--   \\copy lineitem FROM 'lineitem.tbl' WITH (FORMAT csv, DELIMITER '|')
        |-- or in DuckDB:
        |--   COPY lineitem FROM 'lineitem.tbl' (DELIMITER '|', HEADER false, NULL_PADDING true);
