@@ -8,14 +8,22 @@ import instantiation.dataset.RecordOrder
   * separated by the delimiter; a field starting with the quote character runs to the closing quote, inside
   * which the escape character takes the next character literally and a doubled quote is one quote; an
   * unquoted field equal to the NULL marker is NULL; missing trailing fields are NULL; an integer that does
-  * not parse is NULL. Integers are `Long` (NULL -> `Long.MinValue`), other columns `String` (NULL -> null).
+  * not parse is NULL. Values are held as described at [[Column]].
   */
 object Parsers {
 
   def code(objectName: String, format: DataFormat, tables: Seq[Table]): String = {
     import Predicate.{charLit, lit}
     val parsers = tables.groupBy(_.name).values.map(_.head).toSeq.sortBy(_.name).map { t =>
-      val values = t.columns.zipWithIndex.map { case (c, i) => if (c.isInt) s"int(f($i))" else s"f($i)" }
+      val values = t.columns.zipWithIndex.map { case (c, i) =>
+        c.kind match {
+          case "int" => s"int(f($i))"
+          case "decimal" => s"dec(f($i))"
+          case "date" => s"date(f($i))"
+          case "timestamp" => s"timestamp(f($i))"
+          case _ => s"f($i)"
+        }
+      }
       s"  def ${t.name}(line: String): ${t.tupleType} = {\n" +
         s"    val f = split(line, ${t.columns.size})\n" +
         s"    ${values.mkString("(", ", ", ")")}\n" +
@@ -28,8 +36,7 @@ object Parsers {
       s"/** Parsing and predicate helpers for [[$objectName]]. */",
       s"object $objectName {",
       "",
-      "  /** NULL integers are represented as Long.MinValue, NULL text as null. */",
-      "  val NullInt: Long = Long.MinValue",
+      "  // NULL is Long.MinValue for int, date and timestamp columns, NaN for decimals and null for text",
       s"  val Delimiter: Char = ${charLit(format.delimiter)}",
       s"  val HasQuote: Boolean = ${format.quote.isDefined}",
       s"  val Quote: Char = $quote",
@@ -37,9 +44,7 @@ object Parsers {
       s"  val Escape: Char = $escape",
       s"  val NullValue: String = ${lit(format.nullValue)}",
       "",
-      "  def int(s: String): Long =",
-      "    if (s == null || s.isEmpty) NullInt",
-      "    else try s.trim.toLong catch { case _: NumberFormatException => NullInt }",
+      Values.code,
       "",
       "  private def field(s: String): String = if (s == NullValue) null else s",
       "",

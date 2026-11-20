@@ -14,6 +14,9 @@ sealed trait SQLDialect {
   /** A date constant, from `yyyy-MM-dd`. */
   def dateLiteral(date: String): String
 
+  /** A timestamp constant, from `yyyy-MM-dd HH:mm:ss.SSS`. */
+  def timestampLiteral(timestamp: String): String
+
   /** The ORDER BY clause of a sort operator inside a common table expression. */
   def orderByInCte(column: String): String
 
@@ -30,6 +33,8 @@ object SQLDialect {
 
     def dateLiteral(date: String): String = s"DATE '$date'"
 
+    def timestampLiteral(timestamp: String): String = s"TIMESTAMP '$timestamp'"
+
     def orderByInCte(column: String): String = s"ORDER BY $column"
 
     def likePattern(pattern: String): String = pattern
@@ -40,6 +45,8 @@ object SQLDialect {
     val name = "SQL Server (T-SQL)"
 
     def dateLiteral(date: String): String = s"CAST('$date' AS DATE)"
+
+    def timestampLiteral(timestamp: String): String = s"CAST('$timestamp' AS DATETIME2(3))"
 
     // OFFSET 0 ROWS makes ORDER BY legal in a CTE; as in standard SQL, the order is only guaranteed for the final result
     def orderByInCte(column: String): String = s"ORDER BY $column OFFSET 0 ROWS"

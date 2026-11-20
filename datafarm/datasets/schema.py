@@ -5,19 +5,24 @@ Understood: column names and types, NOT NULL, PRIMARY KEY (on a column or as a t
 REFERENCES (on a column) and FOREIGN KEY ... REFERENCES ... (as a table constraint). Other statements
 (CREATE INDEX, ALTER TABLE, ...) and other constraints (UNIQUE, CHECK, DEFAULT) are ignored.
 
-Column types are mapped to the two kinds the generated jobs know:
-  - "int": the integer types (SMALLINT, INT, INTEGER, BIGINT, TINYINT, SERIAL, ...), 64-bit in the jobs;
-  - "text": everything else. CHAR/VARCHAR/TEXT columns are text anyway; other types (DATE, TIMESTAMP,
-    DECIMAL, ...) are carried as their text in this version, and only compared with =, !=, IN, LIKE and
-    NULL tests, except dates and timestamps, whose ISO text also orders correctly with <, >, BETWEEN.
+Column types are mapped to the kinds the generated jobs know (see csvformat.py for how values are read):
+  - "int": the integer types (SMALLINT, INT, INTEGER, BIGINT, TINYINT, SERIAL, ...), 64-bit integers;
+  - "decimal": DECIMAL, NUMERIC, REAL, FLOAT, DOUBLE, ..., 64-bit floating point in the jobs;
+  - "date": DATE, ISO yyyy-MM-dd;
+  - "timestamp": TIMESTAMP and DATETIME, ISO yyyy-MM-dd HH:mm[:ss[.fff]] without time zone;
+  - "text": CHAR, VARCHAR, TEXT, ... and any other type. Text of other types (BOOLEAN, UUID, TIME, ...)
+    is not ordered like its values, so such columns are only compared with =, !=, IN, LIKE and NULL tests.
 """
 import re
 
 INT_TYPES = {"int", "integer", "bigint", "smallint", "tinyint", "mediumint", "int2", "int4", "int8",
              "serial", "bigserial", "smallserial", "hugeint", "long"}
+DECIMAL_TYPES = {"decimal", "numeric", "dec", "number", "real", "float", "float4", "float8", "double",
+                 "double precision", "money", "smallmoney"}
+DATE_TYPES = {"date"}
+TIMESTAMP_TYPES = {"timestamp", "datetime", "datetime2", "timestamptz", "smalldatetime"}
 TEXT_TYPES = {"text", "varchar", "char", "character", "nvarchar", "nchar", "string", "clob",
               "character varying", "varying", "bpchar"}
-ORDERED_TEXT_TYPES = {"date", "timestamp", "datetime", "datetime2", "timestamptz", "time"}
 
 
 def _strip_comments(sql):
@@ -62,17 +67,16 @@ def _names(s):
 
 
 def type_kind(sql_type):
-    """'int' or 'text' for a declared SQL type, and whether its text orders like its values."""
+    """The kind of a declared SQL type (int, decimal, date, timestamp or text), and whether its values order
+    like their text (False only for text of types that are not character types)."""
     base = re.sub(r"\(.*", "", sql_type.strip().lower()).strip()
     base = re.sub(r"\s+(unsigned|signed)$", "", base)
     base = re.sub(r"\s+with(out)? time zone$", "", base)
     first = base.split()[0] if base else ""
-    if base in INT_TYPES or first in INT_TYPES:
-        return "int", True
-    if base in TEXT_TYPES or first in TEXT_TYPES:
-        return "text", True
-    if base in ORDERED_TEXT_TYPES or first in ORDERED_TEXT_TYPES:
-        return "text", True
+    for kind, names in (("int", INT_TYPES), ("decimal", DECIMAL_TYPES), ("date", DATE_TYPES),
+                        ("timestamp", TIMESTAMP_TYPES), ("text", TEXT_TYPES)):
+        if base in names or first in names:
+            return kind, True
     return "text", False
 
 

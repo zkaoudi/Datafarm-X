@@ -14,12 +14,14 @@ From each query:
 
         per table:   Data Source -> Filter                 (Filter only if the query filters that table)
         joins:       left-deep chain of Join operators     (no cross products)
-        aggregate:   Reduce -> Reduce                      (aggregates without GROUP BY: combiner + reduce)
+        aggregate:   Reduce -> Reduce, "Reduce All"        (aggregates without GROUP BY: combiner + reduce)
                      GroupCombine -> GroupReduce           (GROUP BY or DISTINCT)
         order:       Sort-Partition                        (ORDER BY)
         output:      Data Sink
 """
 import re
+
+from datafarm.datasets.csvformat import format_date, format_timestamp, literal
 
 
 class UnsupportedQuery(ValueError):
@@ -230,21 +232,41 @@ def parse_filter(c, alias, columns):
             return None, f"unknown column in {c}"
         op = "!=" if op == "<>" else op
         parsed = [_lit(v) for v in vals]
-        if column["type"] == "int":
-            if op in ("like", "not like"):
-                return None, f"LIKE on an integer column: {c}"
+        kind = column["type"]
+        if kind != "text" and op in ("like", "not like"):
+            return None, f"LIKE on a {kind} column: {c}"
+        if kind == "int":
             if any(not num or not re.fullmatch(r"[+-]?\d+", v) for v, num in parsed):
                 return None, f"non-integer constant for an integer column: {c}"
             values = [int(v) for v, _ in parsed]
+        elif kind == "decimal":
+            try:
+                [literal(kind, v) for v, _ in parsed]
+            except ValueError:
+                return None, f"non-numeric constant for a decimal column: {c}"
+            values = [json_number(v) for v, _ in parsed]
+        elif kind in ("date", "timestamp"):
+            if any(num for _, num in parsed):
+                return None, f"number compared with a {kind} column: {c}"
+            try:
+                xs = [literal(kind, v) for v, _ in parsed]
+            except ValueError:
+                return None, f"constant that is not an ISO {kind} for a {kind} column: {c}"
+            values = [format_date(x) if kind == "date" else format_timestamp(x) for x in xs]
         else:
-            if not column.get("ordered", True) and op not in ("is null", "is not null"):
-                return None, f"column {column['name']} ({column['sqlType']}) is read as text in this version: {c}"
+            if not column.get("ordered", True) and op not in ("=", "!=", "in", "like", "not like", "is null", "is not null"):
+                return None, f"column {column['name']} ({column['sqlType']}) is read as text, which does not order like its values: {c}"
             if any(num for _, num in parsed):
                 return None, f"number compared with a text column: {c}"
             values = [v for v, _ in parsed]
         value = None if not values else values[0] if op not in ("between", "in") else values
         return {"field": column["name"], "op": op, "value": value}, None
     return None, f"not a supported filter: {c}"
+
+
+def json_number(text):
+    """A decimal constant for catalog.json: an int if it is one, else a float."""
+    return int(text) if re.fullmatch(r"[+-]?\d+", text.strip()) else float(text)
 
 
 # ---- plans --------------------------------------------------------------------------------------
@@ -303,9 +325,12 @@ def build_plan(q, filters, joins, source):
         current = add("GroupReduce", f"reduce: {select}", [current], driver="Sorted Group Reduce",
                       ship="Hash Partition")
     elif _AGG.search(select):
-        current = add("Reduce", f"combine: {select}", [current], driver="Reduce")
-        current = add("Reduce", f"reduce: {select}", [current], driver="Reduce", ship="Forward")
+        # Flink's driver strategy for a reduce without grouping, which is how DataFarm tells it from a keyed one
+        current = add("Reduce", f"combine: {select}", [current], driver="Reduce All")
+        current = add("Reduce", f"reduce: {select}", [current], driver="Reduce All", ship="Forward")
     if q["order_by"]:
         current = add("Sort-Partition", "order by", [current], driver="Sort-Partition")
     add("Data Sink", "org.apache.flink.api.java.io.DiscardingOutputFormat", [current], node_type="sink")
-    return {"source": source, "query": q.get("name", ""), "netRunTime": -1, "executionPlan": {"nodes": nodes}}
+    # "system": the workload's own system, so that jobs can be generated for the system it comes from
+    return {"source": source, "system": "SQL", "query": q.get("name", ""), "netRunTime": -1,
+            "executionPlan": {"nodes": nodes}}

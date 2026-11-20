@@ -7,15 +7,35 @@ import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import scala.collection.JavaConverters._
 
 /**
-  * A column of a dataset table. In the generated jobs every row is a Scala tuple in column order:
-  * integer columns are `Long` (NULL -> `Long.MinValue`), all other columns `String` (NULL -> null).
+  * A column of a dataset table. In the generated jobs every row is a Scala tuple in column order, with
+  * values by the column's kind (see datafarm/datasets/csvformat.py, which reads them the same way):
+  *  - `int`: `Long`, NULL is `Long.MinValue`;
+  *  - `decimal`: `Double`, NULL is `NaN`;
+  *  - `date`: `Long` days since 1970-01-01, NULL is `Long.MinValue`;
+  *  - `timestamp`: `Long` milliseconds since 1970-01-01 00:00, NULL is `Long.MinValue`;
+  *  - `text`: `String`, NULL is null.
   *
   * @param sqlType the type declared in the dataset's schema.sql
-  * @param ordered whether the text of a non-integer column orders like its values (text, dates and
-  *                timestamps in ISO format); decimals and the like are only compared for equality
+  * @param ordered for text columns, whether their text orders like their values (false for types such as
+  *                BOOLEAN or UUID, which are read as text and only compared for equality)
   */
-case class Column(name: String, isInt: Boolean, nullable: Boolean, sqlType: String, ordered: Boolean) {
-  def scalaType: String = if (isInt) "Long" else "String"
+case class Column(name: String, kind: String, nullable: Boolean, sqlType: String, ordered: Boolean) {
+  require(Column.Kinds.contains(kind), s"Column '$name': unknown kind '$kind' (expected ${Column.Kinds.mkString(", ")})")
+
+  def isInt: Boolean = kind == "int"
+  def isText: Boolean = kind == "text"
+  def isDecimal: Boolean = kind == "decimal"
+  /** int, date and timestamp values are Longs */
+  def isLong: Boolean = kind == "int" || kind == "date" || kind == "timestamp"
+
+  def scalaType: String = if (isLong) "Long" else if (isDecimal) "Double" else "String"
+
+  /** Scala expression that is true when tuple field `v` is NULL. */
+  def nullTest(v: String): String = if (isLong) s"$v == Long.MinValue" else if (isDecimal) s"$v.isNaN" else s"$v == null"
+}
+
+object Column {
+  val Kinds: Seq[String] = Seq("int", "decimal", "date", "timestamp", "text")
 }
 
 /** How the data files are read (see datafarm/datasets/csvformat.py, which implements the same rules). */
@@ -54,7 +74,7 @@ case class Table(name: String, file: String, header: Option[String], rows: Optio
 
   /** Columns that can be used as sort keys without null handling. */
   def nullSafeKeyColumns: Seq[Column] = {
-    val safe = columns.filter(c => c.isInt || !c.nullable)
+    val safe = columns.filter(c => c.isLong || !c.nullable)
     if (safe.nonEmpty) safe else columns.take(1)
   }
 }
@@ -85,7 +105,7 @@ case class Catalog(name: String, about: String, format: DataFormat, tables: Seq[
 
   joins.foreach { e =>
     val (c1, c2) = (table(e.table1).column(e.column1), table(e.table2).column(e.column2))
-    require(c1.isInt == c2.isInt, s"Join ${e.table1}.${e.column1} = ${e.table2}.${e.column2} needs columns of the same type")
+    require(c1.kind == c2.kind, s"Join ${e.table1}.${e.column1} = ${e.table2}.${e.column2} needs columns of the same kind")
   }
 }
 
@@ -138,9 +158,9 @@ object Catalog {
       val tn = text(t, "name")
       val columns = elements(t, "columns").map { c =>
         val tp = text(c, "type")
-        if (tp != "int" && tp != "text") fail(s"column $tn.${text(c, "name")}: type must be int or text, not '$tp'")
-        Column(text(c, "name"), tp == "int", Option(c.get("nullable")).forall(_.asBoolean(true)),
-          optText(c, "sqlType").getOrElse(if (tp == "int") "bigint" else "text"),
+        if (!Column.Kinds.contains(tp)) fail(s"column $tn.${text(c, "name")}: type must be one of ${Column.Kinds.mkString(", ")}, not '$tp'")
+        Column(text(c, "name"), tp, Option(c.get("nullable")).forall(_.asBoolean(true)),
+          optText(c, "sqlType").getOrElse(tp),
           Option(c.get("ordered")).forall(_.asBoolean(true)))
       }
       val groupFields = elements(t, "groupFields").map(g => GroupField(text(g, "field"), optLong(g, "distinct")))

@@ -44,12 +44,55 @@ class CONFIG:
         "IMDB": ["Flink"],
     }
 
-    # Input workload the abstract plans are learned from, per DATA_MANAGER:
-    # (folder, plan-file name filter, max plan depth, max joins); -1 = learned from the workload
-    INPUT_WORKLOAD = {
-        "TPCH": ("input-workloads/tpch/", "TPC_H", 6, 3),
-        "IMDB": ("input-workloads/tpch/", "TPC_H", 6, 3),
+    # INPUT WORKLOAD the abstract plans are learned from: a folder in input-workloads/ (name matched
+    # case-insensitively) or a path, with Flink execution plans (*.json) or SQL queries (*.sql).
+    # "" = the workload named like the dataset (TPCH and IMDB: tpch) or, if there is none, the dataset's seed
+    # queries (datasets/<name>/queries/).
+    WORKLOAD = ""
+    WORKLOADS_PATH = join(PROJECT_PATH, "input-workloads")
+    # Settings of a workload: (plan-file name filter, max plan depth, max joins); -1 = learned from the workload
+    WORKLOAD_SETTINGS = {
+        "tpch": ("TPC_H", 6, 3),
     }
+
+    @classmethod
+    def workload_folder(cls, name):
+        """The folder of an input workload: a folder in input-workloads/ (case-insensitive) or a path; None if none."""
+        for cand in (join(cls.WORKLOADS_PATH, name), join(cls.WORKLOADS_PATH, name.lower()), name):
+            if os.path.isdir(cand):
+                return abspath(cand)
+        return None
+
+    @classmethod
+    def workloads(cls):
+        """Names of the workloads in input-workloads/."""
+        if not os.path.isdir(cls.WORKLOADS_PATH):
+            return []
+        return sorted(d for d in os.listdir(cls.WORKLOADS_PATH) if os.path.isdir(join(cls.WORKLOADS_PATH, d)))
+
+    @staticmethod
+    def workload_system(folder):
+        """The system a workload comes from: "SQL" for SQL queries (*.sql) and for plans translated from them,
+        "Flink" for Flink execution plans; None if the folder has neither."""
+        files = os.listdir(folder)
+        plans = sorted(f for f in files if f.endswith(".json"))
+        if not plans:
+            return "SQL" if any(f.endswith(".sql") for f in files) else None
+        try:
+            import json
+            with open(join(folder, plans[0]), encoding="utf-8") as fh:
+                return json.load(fh).get("system", "Flink")
+        except ValueError:
+            return "Flink"  # Flink's own plan files are not always valid JSON; the plan loader repairs them
+
+    @staticmethod
+    def platform_system(platform):
+        """The system whose workloads match jobs for a target platform."""
+        return "SQL" if platform in ("SQL", "SQLServer", "SQLServerFlat") else platform
+
+    @classmethod
+    def default_workload(cls, dataset):
+        return "tpch" if dataset.upper() in ("TPCH", "IMDB") else os.path.basename(dataset.rstrip("/")).lower()
 
     @classmethod
     def dataset_folder(cls, name):
@@ -90,28 +133,47 @@ class CONFIG:
         cls.ABSTRACT_PLAN_GENERATOR = join(cls.PROJECT_PATH, "datafarm", "abstract_generation")
         cls.JOB_GENERATOR = join(cls.PROJECT_PATH, "datafarm", "instantiation")
 
-        # A dataset defined by a folder: the job generator reads its catalog.json, the abstract plans are
-        # learned from the input plans its seed queries were turned into (workload/)
-        cls.DATASET_FOLDER = None if cls.DATA_MANAGER in cls.INPUT_WORKLOAD else cls.dataset_folder(cls.DATA_MANAGER)
-        if cls.DATASET_FOLDER:
-            workload = (join(cls.DATASET_FOLDER, "workload"), "", -1, -1)
+        # A dataset defined by a folder: the job generator reads its catalog.json
+        cls.DATASET_FOLDER = None if cls.DATA_MANAGER in cls.SUPPORTED_PLATFORMS else cls.dataset_folder(cls.DATA_MANAGER)
+        if cls.DATASET_FOLDER is None and cls.DATA_MANAGER not in cls.SUPPORTED_PLATFORMS:
+            raise ValueError(f"Unknown dataset '{cls.DATA_MANAGER}': not one of {', '.join(cls.SUPPORTED_PLATFORMS)} "
+                             f"and no {join(cls.DATASETS_PATH, cls.DATA_MANAGER, 'catalog.json')}")
+
+        # The input workload, kept apart from the dataset: any workload can be combined with any dataset.
+        # Without WORKLOAD, a candidate of the target platform's system is preferred (see workload_system).
+        if cls.WORKLOAD:
+            folder = cls.workload_folder(cls.WORKLOAD)
+            if folder is None:
+                raise ValueError(f"Unknown input workload '{cls.WORKLOAD}': no folder {join(cls.WORKLOADS_PATH, cls.WORKLOAD)}")
         else:
-            workload = cls.INPUT_WORKLOAD.get(cls.DATA_MANAGER)
-            if workload is None:
-                raise ValueError(f"Unknown dataset '{cls.DATA_MANAGER}': not one of {', '.join(cls.INPUT_WORKLOAD)} "
-                                 f"and no {join(cls.DATASETS_PATH, cls.DATA_MANAGER, 'catalog.json')}")
+            candidates = [f for f in (cls.workload_folder(cls.default_workload(cls.DATA_MANAGER)),
+                                      join(cls.DATASET_FOLDER, "queries") if cls.DATASET_FOLDER else None)
+                          if f and os.path.isdir(f) and cls.workload_system(f)]
+            if not candidates:
+                raise ValueError(f"No input workload for '{cls.DATA_MANAGER}': no {join(cls.WORKLOADS_PATH, cls.default_workload(cls.DATA_MANAGER))} "
+                                 "and no seed queries in the dataset folder; give one with --workload")
+            target = cls.platform_system(cls.TARGET_PLATFORM)
+            folder = next((f for f in candidates if cls.workload_system(f) == target), candidates[0])
+        cls.WORKLOAD_FOLDER = folder
+        cls.WORKLOAD_SYSTEM = cls.workload_system(folder)
+        plan_filter, max_depth, max_joins = cls.WORKLOAD_SETTINGS.get(os.path.basename(folder), ("", -1, -1))
+        # A workload of SQL queries is turned into plans first (RunGenerator.py), into the experiment folder
+        cls.WORKLOAD_IS_SQL = not any(f.endswith(".json") for f in os.listdir(folder))
 
         # Path to original exec plans
-        cls.ORIG_EXEC_PLAN_FOLDER = join(cls.PROJECT_PATH, workload[0])  # <absolute_path_to_input_workload>
-        cls.ORIG_EXEC_PLAN_FILTER = workload[1]
-        cls.ABSTRACT_PLAN_MAX_DEPTH = workload[2]
-        cls.ABSTRACT_PLAN_MAX_JOINS = workload[3]
+        cls.ORIG_EXEC_PLAN_FILTER = plan_filter
+        cls.ABSTRACT_PLAN_MAX_DEPTH = max_depth
+        cls.ABSTRACT_PLAN_MAX_JOINS = max_joins
 
         # Path of generated data destination
         # Generated output: abstract plans, jobs, execution plans and labels of each experiment
         cls.BASE_PATH = cls.OUTPUT_PATH or join(cls.PROJECT_PATH, "training-data/")
 
         cls.EXPERIMENT_PATH = join(cls.BASE_PATH, (cls.EXPERIMENT_ID or f"{cls.TARGET_PLATFORM}_{os.path.basename(cls.DATA_MANAGER.rstrip('/'))}") + "/")
+
+        # <absolute_path_to_input_workload>: the plans abstract plans are learned from
+        cls.ORIG_EXEC_PLAN_FOLDER = join(cls.EXPERIMENT_PATH, "input_workload_plans") if cls.WORKLOAD_IS_SQL \
+            else cls.WORKLOAD_FOLDER
 
         cls.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER = join(
             cls.EXPERIMENT_PATH, "generated_abstract_exec_plans"

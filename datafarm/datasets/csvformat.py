@@ -7,15 +7,29 @@ A row is one line, split into exactly as many fields as the table has columns:
     inside which `escape` takes the next character literally and a doubled quote is one quote;
   - an unquoted field equal to `null` is NULL (by default the empty field), a quoted one never is;
   - missing trailing fields are NULL and extra trailing fields are ignored (so TPC-H's trailing '|' is fine);
-  - an integer column whose text is not an integer is NULL;
+  - a value that does not parse for its column's kind is NULL;
   - with `header`, the first line of each file is skipped.
 
-Integers are 64-bit; NULL integers are represented as Long.MinValue (NULL_INT) in the generated jobs.
+Values by column kind (see schema.py), and how the generated jobs hold them:
+  - int: an optionally signed integer, 64-bit (Long; NULL is Long.MinValue, NULL_INT);
+  - decimal: a decimal number such as -12.50, 3, .5 or 1e-3, as a 64-bit float (Double; NULL is NaN);
+  - date: ISO yyyy-MM-dd, as days since 1970-01-01 (Long; NULL is Long.MinValue);
+  - timestamp: ISO yyyy-MM-dd HH:mm[:ss[.fraction]] (or with 'T'), without time zone, as milliseconds since
+    1970-01-01 00:00 (Long; NULL is Long.MinValue); digits beyond milliseconds are dropped;
+  - text: the field as it is (String; NULL is null).
+All values are trimmed of leading and trailing whitespace before parsing, except text.
 """
+import datetime
+import math
 import re
 
 NULL_INT = -(2 ** 63)  # Long.MinValue
 _INT_RE = re.compile(r"[+-]?[0-9]+\Z")
+_DECIMAL_RE = re.compile(r"[+-]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?\Z")
+_DATE_RE = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})\Z")
+_TIMESTAMP_RE = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})[ T]([0-9]{2}):([0-9]{2})(?::([0-9]{2})(?:\.([0-9]{1,9}))?)?\Z")
+_EPOCH = datetime.date(1970, 1, 1)
+KINDS = ("int", "decimal", "date", "timestamp", "text")
 
 DEFAULTS = {
     "extension": ".csv",
@@ -97,11 +111,13 @@ class Format:
             i += 1
         return out
 
-    def rows(self, path, columns):
-        """Yields the rows of a data file as lists: int for integer columns, str for text, None for NULL.
-        `columns` are (name, is_int) pairs in file order."""
-        n = len(columns)
-        is_int = [c[1] for c in columns]
+    def rows(self, path, kinds):
+        """Yields the rows of a data file for loading into a database, as lists: int for int columns, the text
+        of the value for decimal columns, ISO text for dates (yyyy-MM-dd) and timestamps (yyyy-MM-dd
+        HH:mm:ss.fff), the field for text, and None for NULL (and for values that do not parse, as in the jobs).
+        `kinds`: the kind of each column, in file order."""
+        n = len(kinds)
+        conv = [sql_value(k) for k in kinds]
         # universal newlines: \n, \r and \r\n end a line, as for Java's BufferedReader in the generated jobs
         with open(path, encoding=self.encoding, errors="replace", newline=None) as fh:
             first = True
@@ -113,8 +129,7 @@ class Format:
                     continue
                 first = False
                 raw = self.split(line, n)
-                yield [(None if (v := parse_int(raw[k])) == NULL_INT else v) if is_int[k] else raw[k]
-                       for k in range(n)]
+                yield [conv[k](raw[k]) for k in range(n)]
 
     def header_line(self, path):
         """The first line of a data file (what the generated jobs skip when `header` is set)."""
@@ -142,6 +157,109 @@ def parse_int(s):
         return NULL_INT
     v = int(t)
     return v if -(2 ** 63) <= v < 2 ** 63 else NULL_INT
+
+
+def parse_decimal(s):
+    """The generated parsers' dec(): a float, or NaN for NULL and text that is not a decimal number."""
+    if s is None:
+        return math.nan
+    t = java_trim(s)
+    return float(t) if _DECIMAL_RE.match(t) else math.nan
+
+
+def parse_date(s):
+    """The generated parsers' date(): days since 1970-01-01, or NULL_INT for NULL and invalid dates."""
+    if s is None:
+        return NULL_INT
+    m = _DATE_RE.match(java_trim(s))
+    if not m:
+        return NULL_INT
+    try:
+        return (datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3))) - _EPOCH).days
+    except ValueError:
+        return NULL_INT
+
+
+def parse_timestamp(s):
+    """The generated parsers' timestamp(): milliseconds since 1970-01-01 00:00, or NULL_INT."""
+    if s is None:
+        return NULL_INT
+    m = _TIMESTAMP_RE.match(java_trim(s))
+    if not m:
+        return NULL_INT
+    y, mo, d, h, mi = (int(m.group(i)) for i in range(1, 6))
+    sec = int(m.group(6) or 0)
+    frac = (m.group(7) or "") + "000"
+    if h > 23 or mi > 59 or sec > 59:
+        return NULL_INT
+    try:
+        days = (datetime.date(y, mo, d) - _EPOCH).days
+    except ValueError:
+        return NULL_INT
+    return ((days * 24 + h) * 60 + mi) * 60_000 + sec * 1000 + int(frac[:3])
+
+
+def parse(kind, s):
+    """A field as the generated jobs hold it: int (NULL_INT for NULL), float (NaN for NULL) or str (None)."""
+    if kind == "int":
+        return parse_int(s)
+    if kind == "decimal":
+        return parse_decimal(s)
+    if kind == "date":
+        return parse_date(s)
+    if kind == "timestamp":
+        return parse_timestamp(s)
+    return s
+
+
+def is_null(kind, v):
+    if kind == "decimal":
+        return v != v  # NaN
+    if kind == "text":
+        return v is None
+    return v == NULL_INT
+
+
+def format_date(days):
+    return (_EPOCH + datetime.timedelta(days=days)).isoformat()
+
+
+def format_timestamp(ms):
+    days, rest = divmod(ms, 86_400_000)
+    h, rest = divmod(rest, 3_600_000)
+    mi, rest = divmod(rest, 60_000)
+    sec, milli = divmod(rest, 1000)
+    return f"{format_date(days)} {h:02d}:{mi:02d}:{sec:02d}.{milli:03d}"
+
+
+def sql_value(kind):
+    """Field -> the value loaded into a database column of that kind (None for NULL), as the jobs read it."""
+    if kind == "int":
+        return lambda s: None if (v := parse_int(s)) == NULL_INT else v
+    if kind == "decimal":
+        return lambda s: None if parse_decimal(s) != parse_decimal(s) else java_trim(s)
+    if kind == "date":
+        return lambda s: None if (v := parse_date(s)) == NULL_INT else format_date(v)
+    if kind == "timestamp":
+        return lambda s: None if (v := parse_timestamp(s)) == NULL_INT else format_timestamp(v)
+    return lambda s: s
+
+
+def literal(kind, v):
+    """A constant of a filter (from a query or dataset.json) as the jobs compare it; ValueError if invalid."""
+    if kind == "int":
+        x = parse_int(str(v))
+    elif kind == "decimal":
+        x = parse_decimal(str(v))
+    elif kind == "date":
+        x = parse_date(str(v))
+    elif kind == "timestamp":
+        x = parse_timestamp(str(v))
+    else:
+        return str(v)
+    if is_null(kind, x):
+        raise ValueError(f"'{v}' is not a valid {kind}")
+    return x
 
 
 def like(s, p):

@@ -119,6 +119,17 @@ object SchemaDDL {
     else "BIGINT"
   }
 
+  private val Decimal = """(?i)(?:decimal|numeric|dec|number)\s*\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\)""".r
+
+  /**
+    * Decimals with a declared precision keep it (the data must fit it: the jobs do not round); others
+    * (FLOAT, REAL, DOUBLE, DECIMAL without precision) are 64-bit floating point, as in the jobs.
+    */
+  private def decimalType(c: Column, sqlServer: Boolean): String = c.sqlType.trim match {
+    case Decimal(precision, scale) => s"DECIMAL($precision, ${Option(scale).getOrElse("0")})"
+    case _ => if (sqlServer) "FLOAT" else "DOUBLE PRECISION"
+  }
+
   /** Text columns keep a declared length; CHAR(n) becomes VARCHAR(n), as the jobs do not pad; other types are text. */
   private def length(c: Column): Option[Int] = c.sqlType.trim match {
     case VarChar(n) if c.ordered => Some(n.toInt)
@@ -139,16 +150,22 @@ object SchemaDDL {
   }
 
   private def loadComment(catalog: Catalog, engines: String): String =
-    s"""-- Tables of the ${catalog.name} dataset, used by the generated SQL jobs. Columns that are not integers
-       |-- are text here, as in the dataflow jobs, so that all platforms compare them the same way.
+    s"""-- Tables of the ${catalog.name} dataset, used by the generated SQL jobs. Column types follow the kinds the
+       |-- dataflow jobs read (integer, decimal, date, timestamp with milliseconds, text), so that all platforms
+       |-- compare values the same way.
        |-- Load the data files with
        |--   python datafarm/execution/sql/load_sql_data.py --engine $engines --dataset ${catalog.name} --data <data_dir> --schema schema.sql --connection "<connection>"
        |-- which parses them as the generated Flink, Wayang and Spark jobs do.""".stripMargin
 
   /** Standard SQL (PostgreSQL, DuckDB). */
   def standard(catalog: Catalog): String =
-    ddl(catalog, c => if (c.isInt) intType(c, sqlServer = false) else length(c).map(n => s"VARCHAR($n)").getOrElse("TEXT"),
-      loadComment(catalog, "postgres|duckdb"), _ => true)
+    ddl(catalog, c => c.kind match {
+      case "int" => intType(c, sqlServer = false)
+      case "decimal" => decimalType(c, sqlServer = false)
+      case "date" => "DATE"
+      case "timestamp" => "TIMESTAMP"
+      case _ => length(c).map(n => s"VARCHAR($n)").getOrElse("TEXT")
+    }, loadComment(catalog, "postgres|duckdb"), _ => true)
 
   /**
     * SQL Server: text columns are NVARCHAR with a binary collation, so comparisons, LIKE and MIN are
@@ -156,7 +173,11 @@ object SchemaDDL {
     * NVARCHAR(MAX) or longer than 450 characters are left out (SQL Server can not index them).
     */
   def sqlServer(catalog: Catalog): String =
-    ddl(catalog, c => if (c.isInt) intType(c, sqlServer = true)
-    else s"NVARCHAR(${length(c).map(_.toString).getOrElse("MAX")}) COLLATE Latin1_General_100_BIN2",
-      loadComment(catalog, "sqlserver"), c => c.isInt || length(c).exists(_ <= 450))
+    ddl(catalog, c => c.kind match {
+      case "int" => intType(c, sqlServer = true)
+      case "decimal" => decimalType(c, sqlServer = true)
+      case "date" => "DATE"
+      case "timestamp" => "DATETIME2(3)"
+      case _ => s"NVARCHAR(${length(c).map(_.toString).getOrElse("MAX")}) COLLATE Latin1_General_100_BIN2"
+    }, loadComment(catalog, "sqlserver"), c => !c.isText || length(c).exists(_ <= 450))
 }

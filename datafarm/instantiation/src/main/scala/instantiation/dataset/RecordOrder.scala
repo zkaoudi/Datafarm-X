@@ -54,7 +54,9 @@ object RecordOrder {
       |    case (p: Int, q: Int) => Integer.compare(p, q)
       |    case (p: Long, q: Long) => java.lang.Long.compare(p, q)
       |    case (p: Float, q: Float) => java.lang.Float.compare(p, q)
-      |    case (p: Double, q: Double) => java.lang.Double.compare(p, q)
+      |    case (p: Double, q: Double) => // NaN (a NULL decimal) first, and -0.0 equal to 0.0, as in SQL
+      |      if (p.isNaN || q.isNaN) java.lang.Boolean.compare(!p.isNaN, !q.isNaN)
+      |      else if (p < q) -1 else if (p > q) 1 else 0
       |    case (p: String, q: String) => p.compareTo(q)
       |    case (p: Product, q: Product) => compareRecords(p, q)
       |    case (p: Comparable[_], _) => p.asInstanceOf[Comparable[Any]].compareTo(y)

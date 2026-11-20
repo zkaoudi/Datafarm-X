@@ -31,12 +31,20 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install Python requirements
         run: pip install -r requirements.txt duckdb
-      - name: The committed dataset catalogs are what add_dataset derives
+      - name: The committed catalogs and JOB plans are what add_dataset and workload derive
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
           cp -r datasets/example "$RUNNER_TEMP/example"
           python -m datafarm.datasets.add_dataset "$RUNNER_TEMP/example" --data datasets/example/data
           python .github/scripts/same_catalog.py datasets/example "$RUNNER_TEMP/example"
+          # JOB: the catalog and the plans of input-workloads/job are derived from the 113 JOB queries
+          git clone -q --depth 1 https://github.com/gregrahn/join-order-benchmark "$RUNNER_TEMP/jb"
+          mkdir "$RUNNER_TEMP/jobq" && cp "$RUNNER_TEMP"/jb/[0-9]*.sql "$RUNNER_TEMP/jobq/"
+          cp -r datasets/job "$RUNNER_TEMP/job"
+          python -m datafarm.datasets.add_dataset "$RUNNER_TEMP/job" --queries "$RUNNER_TEMP/jobq"
+          python .github/scripts/same_catalog.py datasets/job "$RUNNER_TEMP/job"
+          python -m datafarm.datasets.workload "$RUNNER_TEMP/jobq" --dataset datasets/job --out "$RUNNER_TEMP/job_plans"
+          python .github/scripts/same_plans.py input-workloads/job "$RUNNER_TEMP/job_plans"
       - name: Generate jobs for every platform and dataset
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
@@ -60,6 +68,15 @@ jobs:
           for dataset in TPCH JOB example; do
             python .github/scripts/check_sql_jobs.py training-data/SQL_$dataset/generated_jobs
           done
+          # the example jobs exercise the decimal, date and timestamp columns (their filters and parsing)
+          python - <<'EOF'
+          import glob, re
+          sql = " ".join(open(f).read() for f in glob.glob("training-data/SQL_example/generated_jobs/Job*.sql"))
+          found = {k: bool(re.search(p, sql)) for k, p in
+                   {"date": r"DATE '", "timestamp": r"TIMESTAMP '", "decimal": r"price (<|>|BETWEEN)"}.items()}
+          print("filters on", ", ".join(k for k, v in found.items() if v) or "none of the typed columns")
+          assert any(found.values()), "no example job filters a decimal, date or timestamp column"
+          EOF
       - name: Compile the Spark jobs
         if: matrix.python == '3.13'
         run: |
