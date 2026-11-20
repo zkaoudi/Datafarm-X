@@ -5,29 +5,31 @@ candidate and the number of distinct values of the group fields (and of the colu
 Predicates are evaluated with exactly the semantics of the generated jobs (same parsing, same NULL
 handling, Java's string order), so a recorded selectivity is the fraction of rows a generated filter keeps.
 """
-from datafarm.datasets.csvformat import NULL_INT, java_mod, like, parse_int, utf16
+from datafarm.datasets.csvformat import is_null, java_mod, like, literal, parse, utf16
 
 # when looking for low-cardinality columns, distinct values are counted up to this many per column
 DISTINCT_CAP = 100_000
 
 
-def make_predicate(f, is_int):
+def make_predicate(f, kind):
+    """The predicate of a filter candidate over a parsed value (csvformat.parse) of a column of `kind`."""
     op = f["op"].lower()
     v = f.get("value")
     vals = [] if v is None else (v if isinstance(v, list) else [v])
-    if is_int:
-        vals = [int(str(x).strip()) for x in vals]
+    if kind != "text":
+        vals = [literal(kind, x) for x in vals] if op != "mod" else [int(str(x).strip()) for x in vals]
         iv = set(vals)
-        nn = lambda x: x != NULL_INT
+        nn = lambda x: not is_null(kind, x)
         ops = {
             "=": lambda x: nn(x) and x == vals[0], "!=": lambda x: nn(x) and x != vals[0],
             "<": lambda x: nn(x) and x < vals[0], "<=": lambda x: nn(x) and x <= vals[0],
             ">": lambda x: nn(x) and x > vals[0], ">=": lambda x: nn(x) and x >= vals[0],
             "between": lambda x: nn(x) and vals[0] <= x <= vals[1],
-            "in": lambda x: x in iv,
-            "mod": lambda x: nn(x) and java_mod(x, vals[0]) == vals[1],
-            "is null": lambda x: x == NULL_INT, "is not null": lambda x: x != NULL_INT,
+            "in": lambda x: nn(x) and x in iv,
+            "is null": lambda x: not nn(x), "is not null": nn,
         }
+        if kind == "int":
+            ops["mod"] = lambda x: nn(x) and java_mod(x, vals[0]) == vals[1]
     else:
         vals = [str(x) for x in vals]
         k = [utf16(x) for x in vals]
@@ -43,7 +45,7 @@ def make_predicate(f, is_int):
             "is null": lambda x: x is None, "is not null": lambda x: x is not None,
         }
     if op not in ops:
-        raise ValueError(f"operator '{op}' not supported for {'integer' if is_int else 'text'} column")
+        raise ValueError(f"operator '{op}' not supported for a {kind} column")
     return ops[op]
 
 
@@ -59,9 +61,9 @@ def analyze_table(path, table, fmt, distinct_columns, log=print):
     preds = []
     for f in table.get("filters", []):
         i = idx[f["field"]]
-        is_int = cols[i]["type"] == "int"
-        preds.append((i, is_int, make_predicate(f, is_int)))
-    groups = [(idx[c], cols[idx[c]]["type"] == "int", set(), cap) for c, cap in distinct_columns.items()]
+        kind = cols[i]["type"]
+        preds.append((i, kind, make_predicate(f, kind)))
+    groups = [(idx[c], cols[idx[c]]["type"], set(), cap) for c, cap in distinct_columns.items()]
     capped = set()
 
     rows = 0
@@ -77,13 +79,15 @@ def analyze_table(path, table, fmt, distinct_columns, log=print):
             first = False
             raw = fmt.split(line, n)
             rows += 1
-            for k, (i, is_int, pred) in enumerate(preds):
-                if pred(parse_int(raw[i]) if is_int else raw[i]):
+            for k, (i, kind, pred) in enumerate(preds):
+                if pred(parse(kind, raw[i])):
                     hits[k] += 1
-            for i, is_int, seen, cap in groups:
+            for i, kind, seen, cap in groups:
                 if i in capped:
                     continue
-                seen.add(parse_int(raw[i]) if is_int else (raw[i] if raw[i] is not None else ""))
+                v = parse(kind, raw[i])
+                # the generated group-by keys: NULL text is "", a NULL decimal (NaN) one key like any NULL
+                seen.add("" if v is None else None if kind == "decimal" and v != v else v)
                 if cap is not None and len(seen) > cap:
                     capped.add(i)
                     seen.clear()

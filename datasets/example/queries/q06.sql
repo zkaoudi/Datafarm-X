@@ -1,4 +1,4 @@
--- price is a DECIMAL, which this version reads as text: that filter is reported and not used
+-- price is a DECIMAL, signup_date a DATE
 SELECT MIN(c.name), MIN(p.name)
 FROM customers c, orders o, order_items i, products p
 WHERE c.id = o.customer_id

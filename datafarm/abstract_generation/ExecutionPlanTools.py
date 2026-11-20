@@ -1,3 +1,4 @@
+import re
 import os
 import sys
 import json
@@ -45,8 +46,27 @@ def load_exec_plans(plan_folder):
     return exec_plans
 
 
+REDUCE_PACTS = ("Reduce", "GroupReduce", "GroupCombine")
+
+
+def operator_pact(node):
+    """The pact DataFarm learns an operator as. Flink's pact names do not say whether a reduce is keyed: its
+    driver strategy does. A global reduce or group-reduce ("Reduce All", "Group Reduce All") is a Reduce, one
+    row for the whole input; a keyed one ("Sorted Reduce", "Sorted Group Reduce", "HASHED_PARTIAL_REDUCE",
+    "Sorted Combine", ...) is a GroupReduce, i.e. a Group by, one row per key. Without a driver strategy the
+    pact is kept."""
+    pact = node.get("pact")
+    driver = node.get("driver_strategy")
+    if pact not in REDUCE_PACTS or not driver:
+        return pact
+    if re.search(r"\bAll\b", driver):
+        return "Reduce"
+    return "GroupCombine" if pact == "GroupCombine" else "GroupReduce"
+
+
 def compute_flink_graph_from_exec_plan(exec_plan, G, include_cycles=True):
     for n in exec_plan["nodes"]:
+        n = dict(n, pact=operator_pact(n)) if "pact" in n else n
         # check if there is an iteration
         if n["type"] == "bulk_iteration":
             G.add_node(n["id"], **n, color="purple")

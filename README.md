@@ -97,7 +97,8 @@ label them with run times, see [Labeling jobs](#labeling-jobs) (optional).
 |---|---|---|
 | `--platform` | `Flink`, `Wayang`, `Spark`, `SQL`, `SQLServer` or `SQLServerFlat` ([which datasets each supports](#platforms-and-datasets)) | `SQL` |
 | `--dataset` | `TPCH`, `IMDB`, or a dataset folder in [`datasets/`](datasets/) such as `JOB` or `example` (names are case-insensitive), or the path of one | `TPCH` |
-| `--plans` | number of abstract plans learned from the dataset's input workload | 10 |
+| `--workload` | input workload the shape of the jobs is learned from: a folder in [`input-workloads/`](input-workloads/) (e.g. `tpch`, `job`) or a folder of Flink plans (`*.json`) or SQL queries (`*.sql`); see [input workloads](datasets/README.md#input-workloads) | the workload named like the dataset, or its seed queries |
+| `--plans` | number of abstract plans learned from the input workload | 10 |
 | `--versions` | jobs per abstract plan, each with different tables, filters and group-by fields; total = plans × versions | 2 |
 | `--seed` | the same seed gives the same jobs. The seed of each job is derived from it and the plan index, so different plans still differ; `-1` derives it from the plan index only (also deterministic) | 42 |
 | `--experiment` | name of the output folder | `<platform>_<dataset>` |
@@ -146,11 +147,11 @@ change independently.
 | `datafarm/abstract_generation/` | **Abstract plan generation** (Python). `generate_abstract_plans.py` learns operator transitions from an input workload (`AbstractPlan.py`, `Node.py`, `ExecutionPlanTools.py`, `FeatureExtraction.py`) and writes abstract plans. `tpch_input_workload/` holds the Flink TPC-H query jobs whose execution plans form the TPC-H input workload (its own sbt project). |
 | `datafarm/instantiation/` | **Instantiation** (Scala, sbt project). `instantiation.JobGenerator` turns abstract plans into jobs: `platform/{flink,wayang,spark,sql}` translates operators for each platform. `dataset/generic` generates the jobs of every dataset folder from its `catalog.json`; `dataset/{tpch,imdb}` hold the schemas, joins, filters and statistics of TPC-H and IMDB in Scala. |
 | `datafarm/labeling/` | **Label forecasting** (Python): features, job sampling, the quantile-forest model and the Flink task-manager client used by `RunLabelForecaster.py`. |
-| `datafarm/datasets/` | **Dataset folders** (Python): `add_dataset.py` derives a dataset's `catalog.json` and input workload from its schema, seed queries and data (`schema.py`, `queries.py`, `analyze.py`); `csvformat.py` reads the data files as the generated jobs do. |
+| `datafarm/datasets/` | **Dataset folders** (Python): `add_dataset.py` derives a dataset's `catalog.json` from its schema, seed queries and data (`schema.py`, `queries.py`, `analyze.py`); `workload.py` translates SQL queries into input plans; `csvformat.py` reads the data files as the generated jobs do. |
 | `datafarm/datasets_metadata/` | Metadata of TPC-H and IMDB (`tpch/`, `imdb/`): `MetaDataAnalyzer.py` computes the statistics the job generator uses (filter selectivities, distinct group-by values) from the data; `TableMetaData.py` holds the table schemas and cardinalities. |
 | `datafarm/execution/` | **Execution**: tools that run generated jobs and collect their run times or plans, used for labeling. `flink/run_flink_jobs.py` compiles and runs Flink jobs locally and `flink/BuildAndSubmit.py` submits them to a cluster; `spark/run_spark_jobs.py` builds and runs Spark jobs; `wayang/run_wayang_jobs.py` compiles and runs Wayang jobs; `sql/` loads data into DuckDB, PostgreSQL or SQL Server and runs SQL jobs there. |
-| `datasets/` | **Datasets defined by a folder** ([README](datasets/README.md)): `job/` and `example/`, each with `schema.sql`, `dataset.json`, the derived `catalog.json` and the input workload (`workload/`, one plan per seed query). |
-| `input-workloads/` | The TPC-H input workload abstract plans are learned from: `tpch/` (Flink execution plans of TPC-H queries). |
+| `datasets/` | **Datasets defined by a folder** ([README](datasets/README.md)): `job/` and `example/`, each with `schema.sql`, `dataset.json`, seed queries and the derived `catalog.json`. |
+| `input-workloads/` | Input workloads abstract plans are learned from, kept apart from the datasets: `tpch/` (Flink execution plans of TPC-H queries) and `job/` (the 113 JOB queries translated into plans). |
 | `training-data/` | **Output**, one folder per experiment (`--experiment`, default `<platform>_<dataset>`): abstract plans, generated jobs, their execution plans and labels; see its [README](training-data/README.md). Not tracked by git. |
 | `experiments/` | Scripts and configurations of the DataFarm paper's experiments; not used by the pipeline. |
 
@@ -262,8 +263,10 @@ filters or join order.
 - **Parsing:** each job parses its own input (object `JobXvYParsers` in the same file): TPC-H `.tbl` files, or the
   files of a dataset folder. The parsers are the same as in the Wayang jobs, so date filters behave the same on both.
 - **Semantics:** as on all platforms (see [Platforms](#platforms)), joins keep the right-hand tuple and reduces keep
-  the smallest row. A Reduce pair in the abstract plan is a keyed reduce on a group field for TPC-H (as in the Flink
-  TPC-H jobs) and a global reduce for dataset folders (an aggregate without `GROUP BY`, like JOB's `MIN(...)`).
+  the smallest row. Whether a reduce is keyed comes from the input workload: Flink's driver strategies tell
+  (`Reduce All` is global, `Sorted Reduce` keyed), and in SQL queries an aggregate without `GROUP BY` is global. Keyed
+  reduces become group-bys and global ones reduces. TPC-H's hand-written table managers still make a Reduce pair a
+  keyed reduce, until TPC-H moves onto the dataset folders.
 
 ### SQL
 
@@ -375,8 +378,8 @@ files need the loader, since `BULK INSERT` cannot read their backslash escapes.
 
 `--dataset JOB`. The IMDB database of the Join Order Benchmark
 ([Leis et al., PVLDB 2015](https://www.vldb.org/pvldb/vol9/p204-leis.pdf)), on all platforms but `SQLServerFlat`.
-JOB is a [dataset folder](#your-own-dataset), [`datasets/job/`](datasets/job/): its join graph, filters and input
-workload are derived from the 113 JOB queries, so generated jobs have 1 to about 16 joins, as in JOB. The data
+JOB is a [dataset folder](#your-own-dataset), [`datasets/job/`](datasets/job/): its join graph and filters are derived
+from the 113 JOB queries, and so is its input workload, [`input-workloads/job/`](input-workloads/job/), so generated jobs have 1 to about 16 joins, as in JOB. The data
 (the 21 IMDB CSV files of the original dump) and the queries are not included. Its
 [README](datasets/job/README.md) says where to get them and how to measure the statistics on your copy of the data.
 
@@ -393,14 +396,16 @@ python RunGenerator.py --dataset <name> --platform Wayang
 
 `add_dataset` derives the join graph from the queries' equi-joins and the foreign keys, the filter candidates from
 the queries' predicates, and the group-by fields and statistics (row counts, selectivities, distinct values) from the
-data. It turns every seed query into an input plan, from which DataFarm learns the shape of the jobs. The jobs run
+data. Unless another input workload is chosen, the seed queries are also what DataFarm learns the shape of the
+jobs from. The jobs run
 on all platforms but `SQLServerFlat` and compute the same result on each. [`datasets/README.md`](datasets/README.md)
 describes the format, and [`datasets/example/`](datasets/example/) is a small example with data, which CI runs on
 every platform.
 
-- **Limitations:** in this version, columns are either integers or text: dates and timestamps are compared as their
-  ISO text, and decimals get only equality, `IN`, `LIKE` and NULL filters. A job is a chain of joins in which each
-  join uses a column of the table joined last (the generator keeps the right-hand row of each join), so star-shaped
+- **Column types:** integers, decimals, dates, timestamps (with milliseconds) and text. Other types are read as text.
+- **Input workload:** chosen separately with `--workload`. By default it is `input-workloads/<name>/` or the
+  dataset's seed queries.
+- **Limitations:** a job is a chain of joins in which each join uses a column of the table joined last (the generator keeps the right-hand row of each join), so star-shaped
   queries become chains.
 
 ### IMDB (Kaggle)

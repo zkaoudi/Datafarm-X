@@ -55,7 +55,7 @@ def load(engine, conn, dataset, data_dir, tables=None, batch=10000, fast=True, t
         if unknown:
             raise SystemExit(f"Dataset {cat['name']} has no table {', '.join(unknown)}")
         files = {t: os.path.join(data_dir, by_name[t]["file"]) for t in tables}
-        rows_of = lambda t: fmt.rows(files[t], [(c["name"], c["type"] == "int") for c in by_name[t]["columns"]])
+        rows_of = lambda t: fmt.rows(files[t], [c["type"] for c in by_name[t]["columns"]])
     if not tables:
         raise SystemExit(f"No {dataset} files in {data_dir}")
     missing = [f for f in files.values() if not os.path.exists(f)]

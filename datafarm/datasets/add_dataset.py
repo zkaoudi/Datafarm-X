@@ -1,5 +1,5 @@
 """
-Add a dataset to DataFarm: derive its catalog and input workload from a schema, seed queries and the data.
+Add a dataset to DataFarm: derive its catalog from a schema, seed queries and the data.
 
 A dataset is a folder datasets/<name>/ with
     schema.sql      CREATE TABLE statements: column types, NOT NULL, PRIMARY KEY, FOREIGN KEY/REFERENCES
@@ -9,7 +9,10 @@ A dataset is a folder datasets/<name>/ with
 This writes
     catalog.json    tables, columns, join graph, filter candidates, group fields and statistics,
                     which the job generator reads (edit it, or better dataset.json, to adjust)
-    workload/*.json one input plan per seed query, from which DataFarm learns the shape of the jobs
+
+The dataset says what the data is; the input workload, from which DataFarm learns the shape of the jobs, is
+chosen separately (RunGenerator.py --workload). By default it is input-workloads/<name>/ or, if there is none,
+the seed queries themselves.
 
 The join graph comes from the equi-joins of the queries plus the foreign keys of schema.sql, the filter
 candidates from the queries' predicates, and with --data the statistics from the data files (one pass per
@@ -33,7 +36,7 @@ from datafarm.datasets import analyze, queries as Q  # noqa: E402
 from datafarm.datasets.csvformat import Format  # noqa: E402
 from datafarm.datasets.schema import parse_schema  # noqa: E402
 
-SETTINGS = {"about", "format", "files", "groupFields", "joins", "maxOccurrences", "exclude"}
+SETTINGS = {"about", "format", "files", "groupFields", "joins", "maxOccurrences", "exclude", "filters"}
 MOD_FILTERS = [[2, 0], [4, 0], [10, 0]]
 MAX_GROUP_FIELDS = 4
 
@@ -145,8 +148,23 @@ def build_catalog(name, tables, settings, parsed, log):
     if unjoined:
         log(f"| note: no join with {', '.join(unjoined)}: generated jobs never read these tables")
 
-    # ---- filter candidates
+    # ---- filter candidates: those of dataset.json first, then the seed queries' predicates
     filters = {t["name"]: OrderedDict() for t in tables}
+    for tn, fs in settings.get("filters", {}).items():
+        if tn not in by_name:
+            raise SystemExit(f"dataset.json filters: unknown table {tn}")
+        cols = OrderedDict((c["name"], c) for c in by_name[tn]["columns"])
+        for f in fs:
+            if set(f) - {"field", "op", "value"} or "field" not in f or "op" not in f:
+                raise SystemExit(f"dataset.json filters of {tn}: expected {{field, op, value}}, not {f}")
+            if f["field"] not in cols:
+                raise SystemExit(f"dataset.json filters of {tn}: unknown column {f['field']}")
+            try:
+                analyze.make_predicate(f, cols[f["field"]]["type"])  # checks operator and constants
+            except (ValueError, IndexError) as e:
+                raise SystemExit(f"dataset.json filters of {tn}: {f}: {e}")
+            f = {"field": f["field"], "op": f["op"].lower(), "value": f.get("value")}
+            filters[tn][(f["field"], f["op"], json.dumps(f["value"]))] = dict(f, selectivity=None, queries=0)
     for _, _, _, _, preds in parsed:
         for t, f in preds:
             key = (f["field"], f["op"], json.dumps(f["value"]))
@@ -294,7 +312,7 @@ def main(argv=None):
     parsed, notes = read_queries(qdir, tables, log)
     for n in notes:
         log("| note: " + n)
-    log(f"| {len(parsed)} seed queries from {qdir}" + ("" if parsed else " (none: the input workload stays as it is)"))
+    log(f"| {len(parsed)} seed queries from {qdir}" + ("" if parsed else " (none)"))
 
     catalog, joined = build_catalog(name, tables, settings, parsed, log)
     if args.data:
@@ -313,19 +331,6 @@ def main(argv=None):
     log(f"| wrote {os.path.join(folder, 'catalog.json')}: {len(catalog['joins'])} join edges, "
         f"{sum(len(t['filters']) for t in catalog['tables'])} filter candidates")
 
-    if parsed:
-        wdir = os.path.join(folder, "workload")
-        os.makedirs(wdir, exist_ok=True)
-        for old in glob.glob(os.path.join(wdir, "*.json")):
-            os.remove(old)
-        for qname, q, filters, joins, _ in parsed:
-            plan = Q.build_plan(q, filters, joins, f"Derived from query {qname} of dataset {name} by "
-                                                   "datafarm/datasets/add_dataset.py (operator graph only; not "
-                                                   "produced by Flink).")
-            with open(os.path.join(wdir, f"{qname}.json"), "w", encoding="utf-8") as fh:
-                json.dump(plan, fh, indent=1)
-                fh.write("\n")
-        log(f"| wrote {len(parsed)} input plans to {wdir}")
     log(f"| done: python RunGenerator.py --dataset {name} --platform <Flink|Wayang|Spark|SQL|SQLServer>")
 
 

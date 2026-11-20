@@ -1,9 +1,10 @@
 """
 Generate jobs: learn abstract plans from an input workload, then instantiate them for a platform and dataset.
 
-    python RunGenerator.py --platform SQL --dataset JOB --plans 50 --versions 4
+    python RunGenerator.py --platform SQL --dataset JOB --plans 50 --versions 4 [--workload job]
 
-writes 50 x 4 jobs to training-data/SQL_JOB/generated_jobs/. Options left out take their value from CONFIG.py.
+writes 50 x 4 jobs to training-data/SQL_JOB/generated_jobs/. The dataset (what the jobs read) and the input
+workload (what the jobs look like) are chosen separately; any workload can be combined with any dataset. Options left out take their value from CONFIG.py.
 Needs Python with requirements.txt and sbt (the job generator is a Scala project).
 """
 import argparse
@@ -22,6 +23,16 @@ def run(cmd, cwd, env=None, what=""):
     result = subprocess.run(cmd, cwd=cwd, env=env)
     if result.returncode != 0:
         sys.exit(f"Error: {what} failed (exit code {result.returncode}); see the output above.")
+
+
+def translate_sql_workload():
+    """A workload of SQL queries: translate them into plans (with SQL's semantics) to learn the abstract plans from."""
+    if not CONFIG.DATASET_FOLDER:
+        sys.exit(f"Error: the SQL workload {CONFIG.WORKLOAD_FOLDER} needs a dataset folder with a catalog.json to "
+                 f"read the queries against, and {CONFIG.DATA_MANAGER} is not one.")
+    from datafarm.datasets.workload import write_plans
+    print(f"|--> Translating the SQL queries of '{CONFIG.WORKLOAD_FOLDER}' into plans in '{CONFIG.ORIG_EXEC_PLAN_FOLDER}'")
+    write_plans(CONFIG.WORKLOAD_FOLDER, CONFIG.DATASET_FOLDER, CONFIG.ORIG_EXEC_PLAN_FOLDER)
 
 
 def generate_abstract_plans():
@@ -92,6 +103,10 @@ def parse_args(argv=None):
     ap.add_argument("--dataset", default=CONFIG.DATA_MANAGER,
                     help=f"dataset the jobs run on: {', '.join(datasets)}, or the path of a dataset folder with a "
                          f"catalog.json (default: {CONFIG.DATA_MANAGER})")
+    ap.add_argument("--workload", default=CONFIG.WORKLOAD,
+                    help=f"input workload the shape of the jobs is learned from: {', '.join(CONFIG.workloads())}, or a "
+                         "folder of Flink execution plans (*.json) or SQL queries (*.sql) (default: the workload named "
+                         "like the dataset or the dataset's seed queries, preferring one from the platform's system)")
     ap.add_argument("--plans", type=int, default=CONFIG.N_JOBS,
                     help=f"number of abstract plans (default: {CONFIG.N_JOBS})")
     ap.add_argument("--versions", type=int, default=CONFIG.N_VERSIONS,
@@ -109,6 +124,8 @@ def parse_args(argv=None):
     if supported is None:
         ap.error(f"unknown dataset {args.dataset}: not one of {', '.join(datasets)} and no folder with a catalog.json "
                  "(create one with: python -m datafarm.datasets.add_dataset datasets/<name>)")
+    if args.workload and CONFIG.workload_folder(args.workload) is None:
+        ap.error(f"unknown workload {args.workload}: not one of {', '.join(CONFIG.workloads())} and no such folder")
     if args.platform not in supported:
         ap.error(f"dataset {args.dataset} supports the platforms {', '.join(supported)}, not {args.platform}")
     if args.plans < 1 or args.versions < 1:
@@ -119,7 +136,8 @@ def parse_args(argv=None):
 if __name__ == "__main__":
     args = parse_args()
     CONFIG.update(
-        TARGET_PLATFORM=args.platform, DATA_MANAGER=args.dataset, N_JOBS=args.plans, N_VERSIONS=args.versions,
+        TARGET_PLATFORM=args.platform, DATA_MANAGER=args.dataset, WORKLOAD=args.workload,
+        N_JOBS=args.plans, N_VERSIONS=args.versions,
         JOB_SEED=args.seed, EXPERIMENT_ID=args.experiment,
         OUTPUT_PATH=os.path.abspath(args.output) if args.output else "",
         SQLSERVER_TABLE_PREFIX=args.table_prefix,
@@ -129,7 +147,18 @@ if __name__ == "__main__":
     create_project_folders()
 
     print()
+    target = CONFIG.platform_system(CONFIG.TARGET_PLATFORM)
+    if CONFIG.WORKLOAD_SYSTEM != target:
+        lost = {"SQL": " Map and Partition operators have no SQL counterpart and pass their input through, and a "
+                       "Sort-Partition does not order the final result."}.get(target, "")
+        print(f"WARN - the input workload {CONFIG.WORKLOAD_FOLDER} comes from {CONFIG.WORKLOAD_SYSTEM}, the jobs are for "
+              f"{CONFIG.TARGET_PLATFORM}: its operators are translated with their {CONFIG.WORKLOAD_SYSTEM} meaning, so the "
+              f"jobs compute the same on every platform, but their shape may not be typical of {CONFIG.TARGET_PLATFORM} "
+              f"workloads.{lost}")
+        print()
     print("|Abstract Plan Generation")
+    if CONFIG.WORKLOAD_IS_SQL:
+        translate_sql_workload()
     generate_abstract_plans()
 
     print()

@@ -21,20 +21,19 @@ datasets/<name>/
   dataset.json      optional: file format and overrides
 ```
 
-Then derive the dataset's catalog and input workload, measuring the statistics on the data:
+Then derive the dataset's catalog, measuring the statistics on the data:
 
 ```bash
 python -m datafarm.datasets.add_dataset datasets/<name> --data /path/to/data
 python RunGenerator.py --dataset <name> --platform Spark --plans 10 --versions 2
 ```
 
-`add_dataset` writes two things next to your files:
+`add_dataset` writes `catalog.json` next to your files. It is what the job generator reads: the tables and
+columns, the join graph, the filter candidates, the group-by fields and the statistics. You can edit it, but your
+changes are lost the next time you run `add_dataset`. Put lasting changes in `dataset.json` instead.
 
-- **`catalog.json`:** what the job generator reads: the tables and columns, the join graph, the filter candidates,
-  the group-by fields and the statistics. You can edit it, but your changes are lost the next time you run
-  `add_dataset`. Put lasting changes in `dataset.json` instead.
-- **`workload/`:** one input plan per seed query. DataFarm learns the shape of the jobs from these plans: their
-  operators, the number of joins and the depth.
+A dataset says what the jobs read. What the jobs look like (their operators, number of joins and depth) is learned
+from an [input workload](#input-workloads), which is chosen separately.
 
 The data files must be at `<data path>/<table>.csv` (or as set in `dataset.json`). The generated jobs read them from
 the data path you give at run time, and `load_sql_data.py --dataset <name>` loads them into DuckDB, PostgreSQL or SQL
@@ -46,14 +45,21 @@ Server.
 `FOREIGN KEY ... REFERENCES ...`). Other statements and constraints are ignored. A table can have at most 22 columns,
 because the generated jobs hold each row in a Scala tuple.
 
-Column types are read as one of two kinds:
+Column types are read as one of five kinds. A value that does not parse as its kind is NULL, on every platform:
 
-- **Integer types** (`INTEGER`, `BIGINT`, `SMALLINT`, ...) become 64-bit integers. A value that is not an integer is
-  NULL.
-- **Everything else** is text. `CHAR`, `VARCHAR` and `TEXT` columns are text anyway. In this version, other types
-  (`DATE`, `TIMESTAMP`, `DECIMAL`, ...) are carried as their text too. Dates and timestamps in ISO format still order
-  correctly, so range filters on them are kept. Columns such as `DECIMAL` only get equality, `IN`, `LIKE` and NULL
-  filters. Proper decimal and date types are planned.
+| Kind | SQL types | Values in the files | In the dataflow jobs |
+|---|---|---|---|
+| int | `INTEGER`, `BIGINT`, `SMALLINT`, `SERIAL`, ... | `42`, `-7` | `Long` |
+| decimal | `DECIMAL`, `NUMERIC`, `REAL`, `FLOAT`, `DOUBLE`, ... | `12.50`, `3`, `.5`, `1e-3` | `Double` |
+| date | `DATE` | `2024-03-15` | `Long`: days since 1970-01-01 |
+| timestamp | `TIMESTAMP`, `DATETIME` | `2024-03-15 10:30`, `2024-03-15T10:30:00.250`, without time zone | `Long`: milliseconds since 1970-01-01 |
+| text | `CHAR`, `VARCHAR`, `TEXT`, and any other type | the field as it is | `String` |
+
+- **Decimals** are 64-bit floating point in the jobs. In the SQL jobs, a `DECIMAL(p, s)` column keeps its precision
+  and other decimals are `DOUBLE PRECISION`. Values must fit the declared precision, because the jobs do not round.
+- **Timestamps** keep milliseconds; further digits are dropped.
+- **Other types** such as `BOOLEAN` or `UUID` are read as text. Their text does not order like their values, so they
+  only get equality, `IN`, `LIKE` and NULL filters.
 
 ### Seed queries
 
@@ -80,14 +86,11 @@ queries are skipped with a message. From the seed queries `add_dataset` takes:
   disjunction like `x LIKE 'a%' OR x LIKE 'b%'` gives one candidate per disjunct. Other predicates (functions, `OR`
   over different columns, ...) are reported and skipped. Tables that no query filters get `id % m = r` filters on an
   integer key.
-- **Input plans:** each query becomes a plan in the style of a hand-written Flink job. Every table is a `Data Source`
-  with a `Filter` if the query filters it, and the joins form a left-deep chain. An aggregate without `GROUP BY`
-  becomes a `Reduce` pair (one row), and `GROUP BY` or `DISTINCT` becomes a `Group by` pair (one row per key).
-  `ORDER BY` becomes a `Sort-Partition`.
 - **Table repetitions:** how often a table occurs at most in one query. This limits how often a generated job may
   join the same table.
 
-More, and more varied, seed queries give more varied jobs.
+More, and more varied, seed queries give more varied filters and joins. Unless another workload is chosen, the
+seed queries are also the dataset's [input workload](#input-workloads).
 
 ### dataset.json
 
@@ -101,7 +104,8 @@ Optional settings, for example:
   "groupFields": {"orders": ["customer_id", "status"]},
   "joins": [["orders.customer_id", "customers.id"]],
   "maxOccurrences": {"customers": 2},
-  "exclude": ["audit_log"]
+  "exclude": ["audit_log"],
+  "filters": {"orders": [{"field": "order_date", "op": "<=", "value": "2023-06-30"}]}
 }
 ```
 
@@ -118,6 +122,7 @@ Optional settings, for example:
 | `joins` | join edges that no seed query uses | |
 | `maxOccurrences` | how often a table may occur in one job | from the seed queries, at least 1 |
 | `exclude` | tables of `schema.sql` that jobs never read | |
+| `filters` | filter candidates of a table, in addition to the seed queries' predicates: `field`, `op` (as in the seed queries, or `mod` with `[m, r]`) and `value` (a list for `between` and `in`) | |
 
 The files are read by the same rules on every platform (`datafarm/datasets/csvformat.py`, and its counterpart in the
 parsers generated into the jobs). A row is one line. A field that starts with the quote character runs to the closing
@@ -131,6 +136,37 @@ and extra ones are ignored, so `|`-terminated lines such as TPC-H's work with `"
 3. if neither gives any, the first column that is not the primary key.
 
 At most 4 are used.
+
+## Input workloads
+
+An input workload is what DataFarm learns the shape of the jobs from: which operators follow which, how many joins,
+how deep. It is kept apart from the dataset, so any workload can be combined with any dataset:
+
+```bash
+python RunGenerator.py --dataset example --workload job --platform SQL
+```
+
+A workload is a folder of one of two kinds:
+
+- **Flink execution plans (`*.json`)**, as Flink writes them, like `input-workloads/tpch/`. They are read with Flink's
+  semantics. Flink's driver strategy says whether a reduce is keyed: `Reduce All` and `Group Reduce All` are global
+  (one row, a *Reduce*), while `Sorted Reduce`, `Sorted Group Reduce` and the like are keyed (one row per key, a
+  *Group by*).
+- **SQL queries (`*.sql`)**, read with SQL's semantics. `RunGenerator.py` translates each query into the plan of the
+  Flink job one would write for it. Every table is a source with a filter if the query filters it, and the joins
+  form a left-deep chain. An aggregate without `GROUP BY` becomes a global reduce, `GROUP BY` or `DISTINCT` a keyed
+  one, and `ORDER BY` a sort. The queries are read against the dataset's tables.
+
+Without `--workload`, a dataset uses `input-workloads/<name>/` if it exists, else its own seed queries. When both
+exist, the one from the target platform's system is used. A workload is meant for the system it comes from: Flink
+plans for Flink jobs, SQL queries for SQL jobs. Any other pair works too, since the operators mean the same on every
+platform, and `RunGenerator.py` warns that the jobs' shape may not be typical of the target platform.
+
+To keep the plans of SQL queries that cannot be shared, as for JOB:
+
+```bash
+python -m datafarm.datasets.workload /path/to/queries --dataset job --out input-workloads/job
+```
 
 ## What the generated jobs do
 

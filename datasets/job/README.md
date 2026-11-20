@@ -9,8 +9,9 @@ The IMDB database of the Join Order Benchmark:
 python RunGenerator.py --dataset job --platform SQL --plans 10 --versions 2
 ```
 
-This folder holds the schema (`schema.sql`), the settings (`dataset.json`), and what `add_dataset` derived from the 113
-JOB queries: `catalog.json` and the input plans in `workload/`. The queries and the data are not included.
+This folder holds the schema (`schema.sql`), the settings (`dataset.json`), and the `catalog.json` that `add_dataset`
+derived from the 113 JOB queries. The JOB input workload, the queries translated into plans, is in
+[`input-workloads/job/`](../../input-workloads/job/). The queries and the data are not included.
 
 - **Data:** the 21 CSV files of the IMDB snapshot used in the paper (`title.csv`, `cast_info.csv`, ...), from
   http://event.cwi.nl/da/job/imdb.tgz. They are comma separated, with text quoted with `"`, `\` as the escape
@@ -26,6 +27,9 @@ git clone https://github.com/gregrahn/join-order-benchmark /tmp/jb
 mkdir /tmp/jb-queries && cp /tmp/jb/[0-9]*.sql /tmp/jb-queries/
 python -m datafarm.datasets.add_dataset datasets/job --queries /tmp/jb-queries --data /path/to/imdb
 ```
+
+With the queries at hand, `--workload /tmp/jb-queries` uses them as the input workload directly. That gives the same
+plans as `input-workloads/job/`, which CI checks.
 
 Notes on the generated jobs:
 

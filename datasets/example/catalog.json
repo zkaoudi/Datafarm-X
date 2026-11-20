@@ -47,7 +47,7 @@
         },
         {
           "name": "signup_date",
-          "type": "text",
+          "type": "date",
           "nullable": false,
           "sqlType": "DATE"
         }
@@ -126,10 +126,9 @@
         },
         {
           "name": "price",
-          "type": "text",
+          "type": "decimal",
           "nullable": false,
-          "sqlType": "DECIMAL(8, 2)",
-          "ordered": false
+          "sqlType": "DECIMAL(8, 2)"
         },
         {
           "name": "supplier",
@@ -163,6 +162,13 @@
           "queries": 1
         },
         {
+          "field": "price",
+          "op": "<",
+          "value": 20,
+          "selectivity": 0.1125,
+          "queries": 1
+        },
+        {
           "field": "category",
           "op": "=",
           "value": "toys",
@@ -181,6 +187,16 @@
           "op": "is null",
           "value": null,
           "selectivity": 0.1875,
+          "queries": 1
+        },
+        {
+          "field": "price",
+          "op": "between",
+          "value": [
+            10,
+            50
+          ],
+          "selectivity": 0.3,
           "queries": 1
         }
       ],
@@ -206,7 +222,7 @@
         },
         {
           "name": "order_date",
-          "type": "text",
+          "type": "date",
           "nullable": false,
           "sqlType": "DATE"
         },
@@ -369,7 +385,7 @@
     {
       "name": "reviews",
       "file": "reviews.csv",
-      "header": "id,product_id,customer_id,rating,body",
+      "header": "id,product_id,customer_id,rating,body,created_at",
       "rows": 600,
       "columns": [
         {
@@ -401,6 +417,12 @@
           "type": "text",
           "nullable": true,
           "sqlType": "TEXT"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": true,
+          "sqlType": "TIMESTAMP"
         }
       ],
       "primaryKey": [
@@ -445,6 +467,20 @@
           "value": 1,
           "selectivity": 0.21,
           "queries": 1
+        },
+        {
+          "field": "created_at",
+          "op": ">=",
+          "value": "2024-01-01 00:00:00.000",
+          "selectivity": 0.465,
+          "queries": 1
+        },
+        {
+          "field": "rating",
+          "op": "<=",
+          "value": 2,
+          "selectivity": 0.37833333,
+          "queries": 1
         }
       ],
       "maxOccurrences": 1
@@ -469,7 +505,7 @@
     {
       "left": "reviews.product_id",
       "right": "products.id",
-      "queries": 2
+      "queries": 3
     },
     {
       "left": "reviews.customer_id",

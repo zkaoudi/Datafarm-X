@@ -39,5 +39,6 @@ CREATE TABLE reviews (
     product_id  INTEGER NOT NULL REFERENCES products (id),
     customer_id INTEGER REFERENCES customers (id),
     rating      INTEGER NOT NULL,
-    body        TEXT
+    body        TEXT,
+    created_at  TIMESTAMP
 );

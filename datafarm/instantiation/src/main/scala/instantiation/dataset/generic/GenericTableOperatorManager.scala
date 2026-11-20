@@ -100,9 +100,7 @@ trait GenericTableLogic extends AbstractTableOperatorManager {
 
   /** Code that drops the tuples whose `column` is NULL, or "" if it is not nullable. */
   protected def notNullFilter(column: Column, index: Int): String =
-    if (!column.nullable) ""
-    else if (column.isInt) s".filter(_._$index != Long.MinValue)"
-    else s".filter(_._$index != null)"
+    if (!column.nullable) "" else s".filter(x => !(${column.nullTest(s"x._$index")}))"
 
   override def joinCode(lxVarName: String, rxVarName: String, outVarName: String, joinRelation: JoinRelation): String = {
     val lt = GenericTableLogic.tableOf(joinRelation.lx)
@@ -127,7 +125,7 @@ trait GenericTableLogic extends AbstractTableOperatorManager {
   protected def keyUdf(field: String): String = {
     val c = table.column(field)
     val i = table.index(field)
-    if (!c.isInt && c.nullable) s"""(x => if (x._$i == null) "" else x._$i)""" else s"(_._$i)"
+    if (c.isText && c.nullable) s"""(x => if (x._$i == null) "" else x._$i)""" else s"(_._$i)"
   }
 
   private def groupField(seed: Int): GroupField = table.groupFields(Math.floorMod(seed, table.groupFields.size))
@@ -286,7 +284,7 @@ class GenericSQLTableOperatorManager(@(JsonIgnore @param @field @getter) val tab
   /** NULL text keys are grouped together with "", as in the dataflow jobs. */
   protected def genericKeyedReduceCode(inVarName: String, outVarName: String, field: String): String = {
     val c = table.column(field)
-    val keyExpr = if (!c.isInt && c.nullable) s"COALESCE($field, '')" else field
+    val keyExpr = if (c.isText && c.nullable) s"COALESCE($field, '')" else field
     sqlKeyedReduceCode(inVarName, outVarName, field, keyExpr)
   }
 
