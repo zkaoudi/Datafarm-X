@@ -1,0 +1,91 @@
+{
+  "about": "The IMDB database of the Join Order Benchmark (JOB). Filter candidates and the join graph are derived from the 113 JOB queries; the group fields are chosen by hand (see groupFields). Statistics are null until measured on your copy of the IMDB data (see datasets/job/README.md).",
+  "format": {
+    "extension": ".csv",
+    "delimiter": ",",
+    "quote": "\"",
+    "escape": "\\",
+    "null": "",
+    "header": false
+  },
+  "groupFields": {
+    "aka_name": [
+      "person_id"
+    ],
+    "aka_title": [
+      "movie_id",
+      "kind_id",
+      "production_year"
+    ],
+    "cast_info": [
+      "role_id",
+      "movie_id",
+      "person_id"
+    ],
+    "char_name": [
+      "imdb_index"
+    ],
+    "comp_cast_type": [
+      "kind"
+    ],
+    "company_name": [
+      "country_code"
+    ],
+    "company_type": [
+      "kind"
+    ],
+    "complete_cast": [
+      "subject_id",
+      "status_id",
+      "movie_id"
+    ],
+    "info_type": [
+      "info"
+    ],
+    "keyword": [
+      "phonetic_code"
+    ],
+    "kind_type": [
+      "kind"
+    ],
+    "link_type": [
+      "link"
+    ],
+    "movie_companies": [
+      "company_type_id",
+      "company_id",
+      "movie_id"
+    ],
+    "movie_info": [
+      "info_type_id",
+      "movie_id"
+    ],
+    "movie_info_idx": [
+      "info_type_id",
+      "movie_id"
+    ],
+    "movie_keyword": [
+      "keyword_id",
+      "movie_id"
+    ],
+    "movie_link": [
+      "link_type_id",
+      "movie_id"
+    ],
+    "name": [
+      "gender",
+      "imdb_index"
+    ],
+    "person_info": [
+      "info_type_id",
+      "person_id"
+    ],
+    "role_type": [
+      "role"
+    ],
+    "title": [
+      "kind_id",
+      "production_year"
+    ]
+  }
+}

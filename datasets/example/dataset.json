@@ -1,0 +1,4 @@
+{
+  "about": "A small web shop with customers, products, orders, order items and reviews: the example of how to add a dataset to DataFarm. The data in data/ is synthetic.",
+  "format": {"extension": ".csv", "delimiter": ",", "quote": "\"", "escape": null, "null": "", "header": true}
+}

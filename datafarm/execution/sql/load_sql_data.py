@@ -1,13 +1,14 @@
 """
-Load TPC-H or JOB (IMDB) data into DuckDB, PostgreSQL or SQL Server for the generated SQL jobs.
+Load the data of a dataset into DuckDB, PostgreSQL or SQL Server for the generated SQL jobs.
 
-The rows are parsed exactly as the generated Wayang/Spark jobs parse them (for JOB with the same CSV
-rules as datafarm/datasets_metadata/job/MetaDataAnalyzer.py: backslash escapes, empty unquoted
-field = NULL), so all platforms see the same data. The engines' own CSV readers handle the JOB files
-differently (BULK INSERT cannot read them at all), so this loader parses them itself.
+The rows are parsed exactly as the generated Flink, Wayang and Spark jobs parse them: for a dataset
+defined by a folder (datasets/<name>/, e.g. job or example) with the file format of its catalog.json
+(datafarm/datasets/csvformat.py), for TPC-H as dbgen's '|'-separated .tbl files. So all platforms see the
+same data; the engines' own CSV readers handle some files differently (BULK INSERT can not read the JOB
+files at all), so this loader parses them itself.
 
 Usage:
-    python datafarm/execution/sql/load_sql_data.py --engine duckdb|postgres|sqlserver --dataset TPCH|JOB \\
+    python datafarm/execution/sql/load_sql_data.py --engine duckdb|postgres|sqlserver --dataset TPCH|<name> \\
         --data /path/to/data --schema training-data/<EXPERIMENT_ID>/generated_jobs/schema.sql [--connection ...]
 
 --schema runs the CREATE TABLE statements first (the schema.sql written next to the generated SQL jobs:
@@ -23,8 +24,8 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))  # repository root
 from datafarm.execution.sql import engines  # noqa: E402
-from datafarm.datasets_metadata.job import MetaDataAnalyzer as JOB  # noqa: E402  (CSV parsing of the JOB tables)
-from datafarm.datasets_metadata.job.TableMetaData import SCHEMA as JOB_SCHEMA  # noqa: E402  (their column types)
+from datafarm.datasets import catalog as catalogs  # noqa: E402
+from datafarm.datasets.csvformat import Format  # noqa: E402
 
 TPCH_TABLES = ["region", "nation", "supplier", "customer", "part", "partsupp", "orders", "lineitem"]
 
@@ -39,25 +40,22 @@ def tpch_rows(path):
             yield fields  # the database converts the strings to INT/DECIMAL/DATE
 
 
-def job_rows(path, table):
-    cols = JOB_SCHEMA[table]
-    with open(path, encoding="utf-8", errors="replace", newline=None) as fh:
-        for line in fh:
-            if line.endswith("\n"):
-                line = line[:-1]
-            raw = JOB.split(line, len(cols))
-            yield [(None if JOB.parse_int(v) == JOB.NULL_INT else JOB.parse_int(v)) if is_int else v
-                   for v, (_, is_int, _) in zip(raw, cols)]
-
-
 def load(engine, conn, dataset, data_dir, tables=None, batch=10000, fast=True, truncate=False, log=print):
     """Loads the files of `dataset` from `data_dir` into the existing tables; returns the row counts."""
-    if dataset == "JOB":
-        tables = tables or sorted(JOB_SCHEMA)
-        files = {t: os.path.join(data_dir, t + ".csv") for t in tables}
-    else:
+    if dataset.upper() == "TPCH":
         tables = tables or [t for t in TPCH_TABLES if os.path.exists(os.path.join(data_dir, t + ".tbl"))]
         files = {t: os.path.join(data_dir, t + ".tbl") for t in tables}
+        rows_of = lambda t: tpch_rows(files[t])
+    else:
+        cat = catalogs.load(dataset)
+        fmt = Format.from_json(cat["format"])
+        by_name = {t["name"]: t for t in cat["tables"]}
+        tables = tables or [t["name"] for t in cat["tables"]]
+        unknown = [t for t in tables if t not in by_name]
+        if unknown:
+            raise SystemExit(f"Dataset {cat['name']} has no table {', '.join(unknown)}")
+        files = {t: os.path.join(data_dir, by_name[t]["file"]) for t in tables}
+        rows_of = lambda t: fmt.rows(files[t], [(c["name"], c["type"] == "int") for c in by_name[t]["columns"]])
     if not tables:
         raise SystemExit(f"No {dataset} files in {data_dir}")
     missing = [f for f in files.values() if not os.path.exists(f)]
@@ -68,7 +66,7 @@ def load(engine, conn, dataset, data_dir, tables=None, batch=10000, fast=True, t
     for t in tables:
         if truncate:
             engines.delete_rows(engine, conn, t)
-        rows = job_rows(files[t], t) if dataset == "JOB" else tpch_rows(files[t])
+        rows = rows_of(t)
         start = time.time()
         counts[t] = engines.insert_rows(engine, conn, t, rows, batch=batch, fast=fast)
         log(f"| {t}: {counts[t]:,} rows in {time.time() - start:.1f} s")
@@ -84,8 +82,9 @@ def created_tables(script):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     engines.add_arguments(ap)
-    ap.add_argument("--dataset", required=True, choices=["JOB", "TPCH"])
-    ap.add_argument("--data", required=True, help="folder with the .csv (JOB) or .tbl (TPC-H) files")
+    ap.add_argument("--dataset", required=True,
+                    help="TPCH, or a dataset defined by a folder: its name in datasets/ (e.g. job) or its path")
+    ap.add_argument("--data", required=True, help="folder with the data files")
     ap.add_argument("--schema", help="schema.sql to run first (CREATE TABLE); without --tables, only the tables it creates are loaded")
     ap.add_argument("--tables", help="comma-separated subset of tables")
     ap.add_argument("--batch", type=int, default=10000, help="rows per insert batch (duckdb, sqlserver)")

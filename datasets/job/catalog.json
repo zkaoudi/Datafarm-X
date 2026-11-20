@@ -1,0 +1,3243 @@
+{
+  "name": "job",
+  "about": "The IMDB database of the Join Order Benchmark (JOB). Filter candidates and the join graph are derived from the 113 JOB queries; the group fields are chosen by hand (see groupFields). Statistics are null until measured on your copy of the IMDB data (see datasets/job/README.md).",
+  "format": {
+    "extension": ".csv",
+    "delimiter": ",",
+    "quote": "\"",
+    "escape": "\\",
+    "null": "",
+    "header": false,
+    "encoding": "utf-8"
+  },
+  "measuredOn": null,
+  "tables": [
+    {
+      "name": "aka_name",
+      "file": "aka_name.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "person_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "imdb_index",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(12)"
+        },
+        {
+          "name": "name_pcode_cf",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "name_pcode_nf",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "surname_pcode",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "md5sum",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "person_id",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%a%",
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "name",
+          "op": "is not null",
+          "value": null,
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "A%",
+          "selectivity": null,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "aka_title",
+      "file": "aka_title.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "movie_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "imdb_index",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(12)"
+        },
+        {
+          "name": "kind_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "production_year",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "phonetic_code",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "episode_of_id",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "season_nr",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "episode_nr",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "text"
+        },
+        {
+          "name": "md5sum",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "movie_id",
+          "distinct": null
+        },
+        {
+          "field": "kind_id",
+          "distinct": null
+        },
+        {
+          "field": "production_year",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            2,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        },
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            4,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        },
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            10,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "cast_info",
+      "file": "cast_info.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "person_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "movie_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "person_role_id",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "text"
+        },
+        {
+          "name": "nr_order",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "role_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "role_id",
+          "distinct": null
+        },
+        {
+          "field": "movie_id",
+          "distinct": null
+        },
+        {
+          "field": "person_id",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "note",
+          "op": "=",
+          "value": "(voice: English version)",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "note",
+          "op": "in",
+          "value": [
+            "(voice)",
+            "(voice: Japanese version)",
+            "(voice) (uncredited)",
+            "(voice: English version)"
+          ],
+          "selectivity": null,
+          "queries": 9
+        },
+        {
+          "field": "note",
+          "op": "=",
+          "value": "(voice)",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(voice)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(uncredited)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(producer)%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "note",
+          "op": "in",
+          "value": [
+            "(producer)",
+            "(executive producer)"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "in",
+          "value": [
+            "(writer)",
+            "(head writer)",
+            "(written by)",
+            "(story)",
+            "(story editor)"
+          ],
+          "selectivity": null,
+          "queries": 11
+        },
+        {
+          "field": "note",
+          "op": "in",
+          "value": [
+            "(voice)",
+            "(voice) (uncredited)",
+            "(voice: English version)"
+          ],
+          "selectivity": null,
+          "queries": 2
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "char_name",
+      "file": "char_name.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "imdb_index",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(12)"
+        },
+        {
+          "name": "imdb_id",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "name_pcode_nf",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "surname_pcode",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "md5sum",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "imdb_index",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "name",
+          "op": "not like",
+          "value": "%Sherlock%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Tony%Stark%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Iron%Man%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "name",
+          "op": "is not null",
+          "value": null,
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%man%",
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Man%",
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "name",
+          "op": "=",
+          "value": "Queen",
+          "selectivity": null,
+          "queries": 2
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "comp_cast_type",
+      "file": "comp_cast_type.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "kind",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "kind",
+          "op": "=",
+          "value": "cast",
+          "selectivity": null,
+          "queries": 12
+        },
+        {
+          "field": "kind",
+          "op": "like",
+          "value": "%complete%",
+          "selectivity": null,
+          "queries": 6
+        },
+        {
+          "field": "kind",
+          "op": "=",
+          "value": "complete+verified",
+          "selectivity": null,
+          "queries": 9
+        },
+        {
+          "field": "kind",
+          "op": "in",
+          "value": [
+            "cast",
+            "crew"
+          ],
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "kind",
+          "op": "=",
+          "value": "complete",
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "kind",
+          "op": "like",
+          "value": "complete%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "kind",
+          "op": "=",
+          "value": "crew",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "kind",
+          "op": "!=",
+          "value": "complete+verified",
+          "selectivity": null,
+          "queries": 2
+        }
+      ],
+      "maxOccurrences": 2
+    },
+    {
+      "name": "company_name",
+      "file": "company_name.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "country_code",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(255)"
+        },
+        {
+          "name": "imdb_id",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "name_pcode_nf",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "name_pcode_sf",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "md5sum",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "country_code",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "country_code",
+          "op": "=",
+          "value": "[de]",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "country_code",
+          "op": "=",
+          "value": "[nl]",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "country_code",
+          "op": "=",
+          "value": "[sm]",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "country_code",
+          "op": "=",
+          "value": "[us]",
+          "selectivity": null,
+          "queries": 37
+        },
+        {
+          "field": "country_code",
+          "op": "=",
+          "value": "[jp]",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "country_code",
+          "op": "=",
+          "value": "[ru]",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "country_code",
+          "op": "!=",
+          "value": "[pl]",
+          "selectivity": null,
+          "queries": 10
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Film%",
+          "selectivity": null,
+          "queries": 8
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Warner%",
+          "selectivity": null,
+          "queries": 8
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "20th Century Fox%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "Twentieth Century Fox%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "=",
+          "value": "YouTube",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "country_code",
+          "op": "!=",
+          "value": "[us]",
+          "selectivity": null,
+          "queries": 8
+        },
+        {
+          "field": "name",
+          "op": "=",
+          "value": "DreamWorks Animation",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "Lionsgate%",
+          "selectivity": null,
+          "queries": 3
+        }
+      ],
+      "maxOccurrences": 2
+    },
+    {
+      "name": "company_type",
+      "file": "company_type.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "kind",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "kind",
+          "op": "=",
+          "value": "production companies",
+          "selectivity": null,
+          "queries": 22
+        },
+        {
+          "field": "kind",
+          "op": "!=",
+          "value": "production companies",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "kind",
+          "op": "is not null",
+          "value": null,
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "kind",
+          "op": "=",
+          "value": "distributors",
+          "selectivity": null,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "complete_cast",
+      "file": "complete_cast.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "movie_id",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "subject_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "status_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "subject_id",
+          "distinct": null
+        },
+        {
+          "field": "status_id",
+          "distinct": null
+        },
+        {
+          "field": "movie_id",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            2,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        },
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            4,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        },
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            10,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "info_type",
+      "file": "info_type.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "info",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "info",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "info",
+          "op": "=",
+          "value": "top 250 rank",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "bottom 10 rank",
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "rating",
+          "selectivity": null,
+          "queries": 29
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "mini biography",
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "genres",
+          "selectivity": null,
+          "queries": 13
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "budget",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "release dates",
+          "selectivity": null,
+          "queries": 20
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "countries",
+          "selectivity": null,
+          "queries": 10
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "votes",
+          "selectivity": null,
+          "queries": 11
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "trivia",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "height",
+          "selectivity": null,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 2
+    },
+    {
+      "name": "keyword",
+      "file": "keyword.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "keyword",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "phonetic_code",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "phonetic_code",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "keyword",
+          "op": "=",
+          "value": "character-name-in-title",
+          "selectivity": null,
+          "queries": 15
+        },
+        {
+          "field": "keyword",
+          "op": "like",
+          "value": "%sequel%",
+          "selectivity": null,
+          "queries": 6
+        },
+        {
+          "field": "keyword",
+          "op": "=",
+          "value": "marvel-cinematic-universe",
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "superhero",
+            "sequel",
+            "second-part",
+            "marvel-comics",
+            "based-on-comic",
+            "tv-special",
+            "fight",
+            "violence"
+          ],
+          "selectivity": null,
+          "queries": 5
+        },
+        {
+          "field": "keyword",
+          "op": "=",
+          "value": "sequel",
+          "selectivity": null,
+          "queries": 8
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "sequel",
+            "revenge",
+            "based-on-novel"
+          ],
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "murder",
+            "murder-in-title",
+            "blood",
+            "violence"
+          ],
+          "selectivity": null,
+          "queries": 9
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "murder",
+            "murder-in-title"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "keyword",
+          "op": "is not null",
+          "value": null,
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "superhero",
+            "marvel-comics",
+            "based-on-comic",
+            "tv-special",
+            "fight",
+            "violence",
+            "magnet",
+            "web",
+            "claw",
+            "laser"
+          ],
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "nerd",
+            "loner",
+            "alienation",
+            "dignity"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "hero",
+            "martial-arts",
+            "hand-to-hand-combat"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "hero",
+            "martial-arts",
+            "hand-to-hand-combat",
+            "computer-animated-movie"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "murder",
+            "blood",
+            "gore",
+            "death",
+            "female-nudity"
+          ],
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "murder",
+            "violence",
+            "blood",
+            "gore",
+            "death",
+            "female-nudity",
+            "hospital"
+          ],
+          "selectivity": null,
+          "queries": 7
+        },
+        {
+          "field": "keyword",
+          "op": "in",
+          "value": [
+            "superhero",
+            "marvel-comics",
+            "based-on-comic",
+            "fight"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "keyword",
+          "op": "=",
+          "value": "computer-animation",
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "keyword",
+          "op": "=",
+          "value": "10,000-mile-club",
+          "selectivity": null,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "kind_type",
+      "file": "kind_type.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "character varying(15)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "kind",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "kind",
+          "op": "=",
+          "value": "movie",
+          "selectivity": null,
+          "queries": 12
+        },
+        {
+          "field": "kind",
+          "op": "in",
+          "value": [
+            "movie",
+            "episode"
+          ],
+          "selectivity": null,
+          "queries": 8
+        },
+        {
+          "field": "kind",
+          "op": "in",
+          "value": [
+            "movie"
+          ],
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "kind",
+          "op": "in",
+          "value": [
+            "movie",
+            "tv movie",
+            "video movie",
+            "video game"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "kind",
+          "op": "in",
+          "value": [
+            "tv series"
+          ],
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "kind",
+          "op": "in",
+          "value": [
+            "tv series",
+            "episode"
+          ],
+          "selectivity": null,
+          "queries": 2
+        }
+      ],
+      "maxOccurrences": 2
+    },
+    {
+      "name": "link_type",
+      "file": "link_type.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "link",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "link",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "link",
+          "op": "=",
+          "value": "features",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "link",
+          "op": "in",
+          "value": [
+            "references",
+            "referenced in",
+            "features",
+            "featured in"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "link",
+          "op": "like",
+          "value": "%follow%",
+          "selectivity": null,
+          "queries": 8
+        },
+        {
+          "field": "link",
+          "op": "like",
+          "value": "%follows%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "link",
+          "op": "in",
+          "value": [
+            "sequel",
+            "follows",
+            "followed by"
+          ],
+          "selectivity": null,
+          "queries": 2
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "movie_companies",
+      "file": "movie_companies.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "movie_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "company_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "company_type_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "text"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "company_type_id",
+          "distinct": null
+        },
+        {
+          "field": "company_id",
+          "distinct": null
+        },
+        {
+          "field": "movie_id",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "note",
+          "op": "not like",
+          "value": "%(as Metro-Goldwyn-Mayer Pictures)%",
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(co-production)%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(presents)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(theatrical)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(France)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(VHS)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(USA)%",
+          "selectivity": null,
+          "queries": 6
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(1994)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "not like",
+          "value": "%(TV)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(Japan)%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "note",
+          "op": "not like",
+          "value": "%(USA)%",
+          "selectivity": null,
+          "queries": 8
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(2006)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(2007)%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "note",
+          "op": "is not null",
+          "value": null,
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(worldwide)%",
+          "selectivity": null,
+          "queries": 6
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(200%)%",
+          "selectivity": null,
+          "queries": 10
+        },
+        {
+          "field": "note",
+          "op": "is null",
+          "value": null,
+          "selectivity": null,
+          "queries": 8
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%(Blu-ray)%",
+          "selectivity": null,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 2
+    },
+    {
+      "name": "movie_info",
+      "file": "movie_info.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "movie_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "info_type_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "info",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "text"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "info_type_id",
+          "distinct": null
+        },
+        {
+          "field": "movie_id",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Sweden",
+            "Norway",
+            "Germany",
+            "Denmark",
+            "Swedish",
+            "Denish",
+            "Norwegian",
+            "German"
+          ],
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Bulgaria"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Sweden",
+            "Norway",
+            "Germany",
+            "Denmark",
+            "Swedish",
+            "Denish",
+            "Norwegian",
+            "German",
+            "USA",
+            "American"
+          ],
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "USA",
+            "America"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Drama",
+            "Horror"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Drama",
+            "Horror",
+            "Western",
+            "Family"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Sweden",
+            "Norway",
+            "Germany",
+            "Denmark",
+            "Swedish",
+            "Danish",
+            "Norwegian",
+            "German",
+            "USA",
+            "American"
+          ],
+          "selectivity": null,
+          "queries": 5
+        },
+        {
+          "field": "note",
+          "op": "like",
+          "value": "%internet%",
+          "selectivity": null,
+          "queries": 7
+        },
+        {
+          "field": "info",
+          "op": "like",
+          "value": "USA:% 200%",
+          "selectivity": null,
+          "queries": 6
+        },
+        {
+          "field": "info",
+          "op": "is not null",
+          "value": null,
+          "selectivity": null,
+          "queries": 10
+        },
+        {
+          "field": "info",
+          "op": "like",
+          "value": "USA:% 199%",
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Horror",
+            "Thriller"
+          ],
+          "selectivity": null,
+          "queries": 5
+        },
+        {
+          "field": "note",
+          "op": "is null",
+          "value": null,
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Horror",
+            "Action",
+            "Sci-Fi",
+            "Thriller",
+            "Crime",
+            "War"
+          ],
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "info",
+          "op": "like",
+          "value": "Japan:%200%",
+          "selectivity": null,
+          "queries": 4
+        },
+        {
+          "field": "info",
+          "op": "like",
+          "value": "USA:%200%",
+          "selectivity": null,
+          "queries": 5
+        },
+        {
+          "field": "info",
+          "op": "like",
+          "value": "Japan:%2007%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "like",
+          "value": "USA:%2008%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Germany",
+            "German"
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Sweden",
+            "Norway",
+            "Germany",
+            "Denmark",
+            "Swedish",
+            "Denish",
+            "Norwegian",
+            "German",
+            "English"
+          ],
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Germany",
+            "German",
+            "USA",
+            "American"
+          ],
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "like",
+          "value": "Japan:%201%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "like",
+          "value": "USA:%201%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "=",
+          "value": "Horror",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "in",
+          "value": [
+            "Sweden",
+            "Germany",
+            "Swedish",
+            "German"
+          ],
+          "selectivity": null,
+          "queries": 3
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "movie_info_idx",
+      "file": "movie_info_idx.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "movie_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "info_type_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "info",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "text"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "info_type_id",
+          "distinct": null
+        },
+        {
+          "field": "movie_id",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "info",
+          "op": ">",
+          "value": "5.0",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": ">",
+          "value": "9.0",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": ">",
+          "value": "2.0",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": ">",
+          "value": "8.0",
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "info",
+          "op": ">",
+          "value": "7.0",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "<",
+          "value": "8.5",
+          "selectivity": null,
+          "queries": 6
+        },
+        {
+          "field": "info",
+          "op": ">",
+          "value": "6.0",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "<",
+          "value": "7.0",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": ">",
+          "value": "6.5",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "info",
+          "op": "<",
+          "value": "3.0",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "info",
+          "op": "<",
+          "value": "3.5",
+          "selectivity": null,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 2
+    },
+    {
+      "name": "movie_keyword",
+      "file": "movie_keyword.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "movie_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "keyword_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "keyword_id",
+          "distinct": null
+        },
+        {
+          "field": "movie_id",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            2,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        },
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            4,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        },
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            10,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "movie_link",
+      "file": "movie_link.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "movie_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "linked_movie_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "link_type_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "link_type_id",
+          "distinct": null
+        },
+        {
+          "field": "movie_id",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            2,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        },
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            4,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        },
+        {
+          "field": "id",
+          "op": "mod",
+          "value": [
+            10,
+            0
+          ],
+          "selectivity": null,
+          "queries": 0
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "name",
+      "file": "name.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "imdb_index",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(12)"
+        },
+        {
+          "name": "imdb_id",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "gender",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(1)"
+        },
+        {
+          "name": "name_pcode_cf",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "name_pcode_nf",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "surname_pcode",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "md5sum",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "gender",
+          "distinct": null
+        },
+        {
+          "field": "imdb_index",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Downey%Robert%",
+          "selectivity": null,
+          "queries": 6
+        },
+        {
+          "field": "name_pcode_cf",
+          "op": "between",
+          "value": [
+            "A",
+            "F"
+          ],
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "name_pcode_cf",
+          "op": "like",
+          "value": "D%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "gender",
+          "op": "=",
+          "value": "m",
+          "selectivity": null,
+          "queries": 11
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Yo%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "name",
+          "op": "not like",
+          "value": "%Yu%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "gender",
+          "op": "=",
+          "value": "f",
+          "selectivity": null,
+          "queries": 14
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Ang%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Angel%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%An%",
+          "selectivity": null,
+          "queries": 7
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "B%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "Z%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "X%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Bert%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%B%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "name",
+          "op": "like",
+          "value": "%Tim%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "gender",
+          "op": "is not null",
+          "value": null,
+          "selectivity": null,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "person_info",
+      "file": "person_info.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "person_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "info_type_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "info",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "text"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "info_type_id",
+          "distinct": null
+        },
+        {
+          "field": "person_id",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "note",
+          "op": "=",
+          "value": "Volker Boehm",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "note",
+          "op": "is not null",
+          "value": null,
+          "selectivity": null,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "role_type",
+      "file": "role_type.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "role",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "role",
+          "op": "=",
+          "value": "actress",
+          "selectivity": null,
+          "queries": 15
+        },
+        {
+          "field": "role",
+          "op": "=",
+          "value": "writer",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "role",
+          "op": "=",
+          "value": "costume designer",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "role",
+          "op": "=",
+          "value": "actor",
+          "selectivity": null,
+          "queries": 2
+        }
+      ],
+      "maxOccurrences": 1
+    },
+    {
+      "name": "title",
+      "file": "title.csv",
+      "header": null,
+      "rows": null,
+      "columns": [
+        {
+          "name": "id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "sqlType": "text"
+        },
+        {
+          "name": "imdb_index",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(12)"
+        },
+        {
+          "name": "kind_id",
+          "type": "int",
+          "nullable": false,
+          "sqlType": "integer"
+        },
+        {
+          "name": "production_year",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "imdb_id",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "phonetic_code",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(5)"
+        },
+        {
+          "name": "episode_of_id",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "season_nr",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "episode_nr",
+          "type": "int",
+          "nullable": true,
+          "sqlType": "integer"
+        },
+        {
+          "name": "series_years",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(49)"
+        },
+        {
+          "name": "md5sum",
+          "type": "text",
+          "nullable": true,
+          "sqlType": "character varying(32)"
+        }
+      ],
+      "primaryKey": [
+        "id"
+      ],
+      "groupFields": [
+        {
+          "field": "kind_id",
+          "distinct": null
+        },
+        {
+          "field": "production_year",
+          "distinct": null
+        }
+      ],
+      "filters": [
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2005,
+            2010
+          ],
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "production_year",
+          "op": ">",
+          "value": 2010,
+          "selectivity": null,
+          "queries": 11
+        },
+        {
+          "field": "production_year",
+          "op": ">",
+          "value": 2000,
+          "selectivity": null,
+          "queries": 18
+        },
+        {
+          "field": "production_year",
+          "op": ">",
+          "value": 2005,
+          "selectivity": null,
+          "queries": 10
+        },
+        {
+          "field": "production_year",
+          "op": ">",
+          "value": 1990,
+          "selectivity": null,
+          "queries": 7
+        },
+        {
+          "field": "production_year",
+          "op": ">",
+          "value": 2014,
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            1980,
+            1995
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            1980,
+            1984
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            1980,
+            2010
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2006,
+            2007
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "One Piece%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "Dragon Ball Z%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2005,
+            2015
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2007,
+            2010
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            1950,
+            2000
+          ],
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "production_year",
+          "op": "=",
+          "value": 1998,
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%Money%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": ">",
+          "value": 1950,
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2005,
+            2008
+          ],
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "Birdemic%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%Movie%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2000,
+            2010
+          ],
+          "selectivity": null,
+          "queries": 5
+        },
+        {
+          "field": "title",
+          "op": "!=",
+          "value": "",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%Champion%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%Loser%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "Champion%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "Loser%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%murder%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%Murder%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%Mord%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "episode_nr",
+          "op": ">=",
+          "value": 50,
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "episode_nr",
+          "op": "<",
+          "value": 100,
+          "selectivity": null,
+          "queries": 3
+        },
+        {
+          "field": "episode_nr",
+          "op": ">=",
+          "value": 5,
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2008,
+            2014
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2005,
+            2009
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2007,
+            2008
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%Kung%Fu%Panda%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            1950,
+            2010
+          ],
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "production_year",
+          "op": ">",
+          "value": 2008,
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "production_year",
+          "op": ">",
+          "value": 2009,
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "Kung Fu Panda%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "Vampire%",
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "=",
+          "value": "Shrek 2",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "production_year",
+          "op": "between",
+          "value": [
+            2000,
+            2005
+          ],
+          "selectivity": null,
+          "queries": 1
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%Freddy%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "%Jason%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "title",
+          "op": "like",
+          "value": "Saw%",
+          "selectivity": null,
+          "queries": 2
+        },
+        {
+          "field": "production_year",
+          "op": "=",
+          "value": 2007,
+          "selectivity": null,
+          "queries": 1
+        }
+      ],
+      "maxOccurrences": 2
+    }
+  ],
+  "joins": [
+    {
+      "left": "title.id",
+      "right": "movie_companies.movie_id",
+      "queries": 81
+    },
+    {
+      "left": "title.id",
+      "right": "movie_keyword.movie_id",
+      "queries": 77
+    },
+    {
+      "left": "movie_keyword.keyword_id",
+      "right": "keyword.id",
+      "queries": 75
+    },
+    {
+      "left": "company_name.id",
+      "right": "movie_companies.company_id",
+      "queries": 74
+    },
+    {
+      "left": "title.id",
+      "right": "movie_info.movie_id",
+      "queries": 57
+    },
+    {
+      "left": "title.id",
+      "right": "cast_info.movie_id",
+      "queries": 57
+    },
+    {
+      "left": "name.id",
+      "right": "cast_info.person_id",
+      "queries": 54
+    },
+    {
+      "left": "info_type.id",
+      "right": "movie_info.info_type_id",
+      "queries": 48
+    },
+    {
+      "left": "movie_companies.movie_id",
+      "right": "movie_keyword.movie_id",
+      "queries": 46
+    },
+    {
+      "left": "title.id",
+      "right": "movie_info_idx.movie_id",
+      "queries": 45
+    },
+    {
+      "left": "info_type.id",
+      "right": "movie_info_idx.info_type_id",
+      "queries": 45
+    },
+    {
+      "left": "movie_companies.movie_id",
+      "right": "movie_info.movie_id",
+      "queries": 42
+    },
+    {
+      "left": "company_type.id",
+      "right": "movie_companies.company_type_id",
+      "queries": 41
+    },
+    {
+      "left": "movie_keyword.movie_id",
+      "right": "movie_info.movie_id",
+      "queries": 40
+    },
+    {
+      "left": "cast_info.movie_id",
+      "right": "movie_keyword.movie_id",
+      "queries": 36
+    },
+    {
+      "left": "cast_info.movie_id",
+      "right": "movie_companies.movie_id",
+      "queries": 33
+    },
+    {
+      "left": "movie_info.movie_id",
+      "right": "movie_info_idx.movie_id",
+      "queries": 29
+    },
+    {
+      "left": "kind_type.id",
+      "right": "title.kind_id",
+      "queries": 29
+    },
+    {
+      "left": "movie_companies.movie_id",
+      "right": "movie_info_idx.movie_id",
+      "queries": 27
+    },
+    {
+      "left": "movie_keyword.movie_id",
+      "right": "movie_info_idx.movie_id",
+      "queries": 25
+    },
+    {
+      "left": "name.id",
+      "right": "aka_name.person_id",
+      "queries": 24
+    },
+    {
+      "left": "aka_name.person_id",
+      "right": "cast_info.person_id",
+      "queries": 24
+    },
+    {
+      "left": "char_name.id",
+      "right": "cast_info.person_role_id",
+      "queries": 22
+    },
+    {
+      "left": "cast_info.movie_id",
+      "right": "movie_info.movie_id",
+      "queries": 21
+    },
+    {
+      "left": "title.id",
+      "right": "complete_cast.movie_id",
+      "queries": 21
+    },
+    {
+      "left": "movie_keyword.movie_id",
+      "right": "complete_cast.movie_id",
+      "queries": 21
+    },
+    {
+      "left": "comp_cast_type.id",
+      "right": "complete_cast.status_id",
+      "queries": 21
+    },
+    {
+      "left": "cast_info.role_id",
+      "right": "role_type.id",
+      "queries": 20
+    },
+    {
+      "left": "link_type.id",
+      "right": "movie_link.link_type_id",
+      "queries": 18
+    },
+    {
+      "left": "comp_cast_type.id",
+      "right": "complete_cast.subject_id",
+      "queries": 18
+    },
+    {
+      "left": "movie_link.movie_id",
+      "right": "title.id",
+      "queries": 15
+    },
+    {
+      "left": "cast_info.movie_id",
+      "right": "movie_info_idx.movie_id",
+      "queries": 15
+    },
+    {
+      "left": "movie_info.movie_id",
+      "right": "complete_cast.movie_id",
+      "queries": 15
+    },
+    {
+      "left": "movie_link.movie_id",
+      "right": "movie_companies.movie_id",
+      "queries": 13
+    },
+    {
+      "left": "cast_info.movie_id",
+      "right": "complete_cast.movie_id",
+      "queries": 12
+    },
+    {
+      "left": "movie_companies.movie_id",
+      "right": "complete_cast.movie_id",
+      "queries": 12
+    },
+    {
+      "left": "movie_link.movie_id",
+      "right": "movie_keyword.movie_id",
+      "queries": 10
+    },
+    {
+      "left": "complete_cast.movie_id",
+      "right": "movie_info_idx.movie_id",
+      "queries": 9
+    },
+    {
+      "left": "movie_link.linked_movie_id",
+      "right": "title.id",
+      "queries": 8
+    },
+    {
+      "left": "name.id",
+      "right": "person_info.person_id",
+      "queries": 6
+    },
+    {
+      "left": "info_type.id",
+      "right": "person_info.info_type_id",
+      "queries": 6
+    },
+    {
+      "left": "person_info.person_id",
+      "right": "cast_info.person_id",
+      "queries": 6
+    },
+    {
+      "left": "movie_link.movie_id",
+      "right": "movie_info.movie_id",
+      "queries": 6
+    },
+    {
+      "left": "title.id",
+      "right": "aka_title.movie_id",
+      "queries": 4
+    },
+    {
+      "left": "movie_keyword.movie_id",
+      "right": "aka_title.movie_id",
+      "queries": 4
+    },
+    {
+      "left": "movie_info.movie_id",
+      "right": "aka_title.movie_id",
+      "queries": 4
+    },
+    {
+      "left": "movie_companies.movie_id",
+      "right": "aka_title.movie_id",
+      "queries": 4
+    },
+    {
+      "left": "person_info.person_id",
+      "right": "aka_name.person_id",
+      "queries": 3
+    },
+    {
+      "left": "cast_info.movie_id",
+      "right": "movie_link.linked_movie_id",
+      "queries": 3
+    },
+    {
+      "left": "movie_link.movie_id",
+      "right": "complete_cast.movie_id",
+      "queries": 3
+    },
+    {
+      "left": "movie_link.movie_id",
+      "right": "movie_info_idx.movie_id",
+      "queries": 3
+    },
+    {
+      "left": "movie_link.linked_movie_id",
+      "right": "movie_info_idx.movie_id",
+      "queries": 3
+    },
+    {
+      "left": "movie_link.linked_movie_id",
+      "right": "movie_companies.movie_id",
+      "queries": 3
+    }
+  ]
+}

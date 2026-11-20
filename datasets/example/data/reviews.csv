@@ -1,0 +1,601 @@
+id,product_id,customer_id,rating,body
+1,67,166,4,great value
+2,79,,3,
+3,56,62,3,Exactly as described
+4,5,182,1,""
+5,20,197,3,great gift for kids
+6,48,240,1,"not great, not terrible"
+7,63,14,5,"The ""best"" one I have"
+8,8,125,4,
+9,41,23,5,
+10,42,268,4,Broke after a week
+11,8,,2,great gift for kids
+12,63,106,3,great gift for kids
+13,36,238,4,Broke after a week
+14,68,63,3,""
+15,20,,5,""
+16,13,61,2,"not great, not terrible"
+17,16,295,3,
+18,50,,4,great value
+19,54,274,4,"The ""best"" one I have"
+20,41,108,1,Exactly as described
+21,73,51,1,
+22,56,,1,great gift for kids
+23,10,188,4,Broke after a week
+24,40,43,1,"The ""best"" one I have"
+25,41,44,3,great value
+26,34,116,2,""
+27,67,80,3,great gift for kids
+28,6,,3,"not great, not terrible"
+29,37,218,5,
+30,23,,1,
+31,27,90,4,""
+32,65,25,4,
+33,79,,3,great value
+34,16,,5,great gift for kids
+35,10,132,5,Exactly as described
+36,75,,4,Broke after a week
+37,79,,5,
+38,67,278,2,great value
+39,48,72,5,great gift for kids
+40,28,,5,great value
+41,9,239,1,Broke after a week
+42,19,48,3,"not great, not terrible"
+43,66,,2,"not great, not terrible"
+44,53,227,1,Exactly as described
+45,71,,2,Broke after a week
+46,12,198,2,Exactly as described
+47,19,,2,Broke after a week
+48,5,131,5,Broke after a week
+49,21,1,4,"The ""best"" one I have"
+50,49,30,2,Broke after a week
+51,74,56,5,
+52,40,133,1,Broke after a week
+53,38,26,1,
+54,25,,4,Exactly as described
+55,7,,3,"not great, not terrible"
+56,62,119,5,""
+57,61,56,4,great value
+58,33,234,2,"The ""best"" one I have"
+59,55,,3,great value
+60,72,70,5,Exactly as described
+61,11,,1,Exactly as described
+62,4,191,3,"The ""best"" one I have"
+63,66,45,5,great value
+64,44,14,5,""
+65,48,,4,great gift for kids
+66,35,,1,great gift for kids
+67,61,274,4,great gift for kids
+68,9,297,1,Broke after a week
+69,41,269,5,""
+70,42,,4,"not great, not terrible"
+71,7,175,2,
+72,40,202,2,great gift for kids
+73,33,254,3,Exactly as described
+74,50,,4,Exactly as described
+75,14,241,3,""
+76,46,202,5,great gift for kids
+77,45,252,4,"not great, not terrible"
+78,23,86,1,"The ""best"" one I have"
+79,73,,1,great value
+80,54,283,1,"not great, not terrible"
+81,32,108,2,"The ""best"" one I have"
+82,41,,5,Exactly as described
+83,10,5,5,""
+84,48,143,1,Broke after a week
+85,39,115,1,""
+86,46,123,4,great value
+87,69,31,1,great value
+88,68,,2,great gift for kids
+89,58,63,4,great value
+90,24,262,4,great value
+91,11,,1,
+92,60,299,2,"The ""best"" one I have"
+93,16,134,4,
+94,12,43,1,great value
+95,67,168,4,""
+96,18,,2,Exactly as described
+97,46,110,5,
+98,13,48,5,"not great, not terrible"
+99,62,228,5,""
+100,76,276,1,""
+101,21,34,3,Exactly as described
+102,32,31,4,"not great, not terrible"
+103,77,255,1,
+104,58,131,2,great value
+105,1,259,4,great gift for kids
+106,44,218,2,Broke after a week
+107,12,101,4,great value
+108,49,8,1,""
+109,36,,2,"The ""best"" one I have"
+110,37,194,5,great gift for kids
+111,69,21,2,""
+112,15,,1,"The ""best"" one I have"
+113,35,269,3,great gift for kids
+114,71,123,2,"not great, not terrible"
+115,3,78,2,great gift for kids
+116,57,3,3,"not great, not terrible"
+117,19,,2,Exactly as described
+118,64,,1,Exactly as described
+119,59,200,5,"not great, not terrible"
+120,36,42,3,""
+121,61,240,1,great value
+122,76,80,4,Exactly as described
+123,62,251,4,great value
+124,47,265,2,
+125,10,,3,"The ""best"" one I have"
+126,49,280,2,""
+127,3,186,4,Exactly as described
+128,80,86,2,
+129,57,220,4,great value
+130,27,,3,Exactly as described
+131,47,,1,"The ""best"" one I have"
+132,77,300,3,"The ""best"" one I have"
+133,36,,2,great value
+134,4,279,5,Broke after a week
+135,59,,2,""
+136,79,238,3,""
+137,15,,3,Broke after a week
+138,50,223,2,Exactly as described
+139,43,34,5,""
+140,45,,4,"The ""best"" one I have"
+141,65,,3,Exactly as described
+142,9,181,5,Exactly as described
+143,6,94,4,Exactly as described
+144,14,48,2,great value
+145,46,,3,"not great, not terrible"
+146,28,247,3,"The ""best"" one I have"
+147,64,46,1,Broke after a week
+148,13,128,2,"not great, not terrible"
+149,3,,5,""
+150,74,240,2,""
+151,61,,4,Exactly as described
+152,53,184,3,"not great, not terrible"
+153,37,,5,""
+154,7,225,1,"The ""best"" one I have"
+155,29,,4,Exactly as described
+156,23,10,5,""
+157,13,232,3,""
+158,52,,1,great value
+159,62,188,1,"The ""best"" one I have"
+160,45,270,2,Exactly as described
+161,72,21,5,Broke after a week
+162,53,3,3,Broke after a week
+163,67,11,3,"not great, not terrible"
+164,16,97,3,Exactly as described
+165,37,,3,"not great, not terrible"
+166,78,118,5,great value
+167,78,293,4,
+168,57,98,1,Exactly as described
+169,56,213,5,""
+170,76,165,4,great value
+171,35,59,2,Broke after a week
+172,25,275,5,great value
+173,77,255,4,""
+174,68,130,5,great gift for kids
+175,34,,5,great gift for kids
+176,1,49,1,Exactly as described
+177,57,66,3,Exactly as described
+178,50,215,5,Exactly as described
+179,40,138,1,"The ""best"" one I have"
+180,71,266,5,Broke after a week
+181,64,,5,great value
+182,9,,5,""
+183,77,65,5,great value
+184,72,223,1,
+185,79,,4,""
+186,40,,4,great value
+187,76,270,3,great gift for kids
+188,19,234,5,great value
+189,27,92,4,Broke after a week
+190,9,197,3,Exactly as described
+191,37,213,1,"The ""best"" one I have"
+192,28,,4,great gift for kids
+193,77,20,3,Exactly as described
+194,44,8,3,great gift for kids
+195,76,,5,"not great, not terrible"
+196,72,300,4,"The ""best"" one I have"
+197,42,152,3,
+198,29,175,5,great gift for kids
+199,25,34,3,"not great, not terrible"
+200,47,112,3,great value
+201,36,,4,"The ""best"" one I have"
+202,37,269,3,
+203,56,,4,great gift for kids
+204,47,,4,Exactly as described
+205,43,199,5,"not great, not terrible"
+206,3,105,1,Exactly as described
+207,27,225,5,"The ""best"" one I have"
+208,42,214,1,
+209,9,,1,great gift for kids
+210,5,,5,Broke after a week
+211,7,9,4,"not great, not terrible"
+212,76,22,4,Exactly as described
+213,51,87,1,"not great, not terrible"
+214,76,67,3,Broke after a week
+215,80,,3,""
+216,34,,5,
+217,66,148,1,
+218,73,47,1,Broke after a week
+219,49,,4,great value
+220,27,,1,"not great, not terrible"
+221,73,,1,great gift for kids
+222,48,196,2,great gift for kids
+223,39,220,3,"The ""best"" one I have"
+224,77,166,4,Exactly as described
+225,37,91,1,"The ""best"" one I have"
+226,61,233,5,"The ""best"" one I have"
+227,45,272,2,great gift for kids
+228,11,117,2,""
+229,75,32,5,"not great, not terrible"
+230,4,104,1,"The ""best"" one I have"
+231,5,,3,""
+232,69,196,4,Exactly as described
+233,60,65,3,Exactly as described
+234,8,255,1,""
+235,55,8,2,great value
+236,9,,5,"not great, not terrible"
+237,47,,4,"not great, not terrible"
+238,44,70,2,"The ""best"" one I have"
+239,11,275,5,"not great, not terrible"
+240,3,220,3,""
+241,61,228,5,great gift for kids
+242,44,129,5,great gift for kids
+243,13,22,4,great gift for kids
+244,7,79,4,
+245,13,129,1,"The ""best"" one I have"
+246,4,,2,great value
+247,47,,1,Broke after a week
+248,39,,2,"not great, not terrible"
+249,50,160,1,"The ""best"" one I have"
+250,66,180,2,great value
+251,50,,3,"not great, not terrible"
+252,41,3,3,Exactly as described
+253,34,240,1,great gift for kids
+254,72,146,4,
+255,53,41,3,great gift for kids
+256,19,45,3,great gift for kids
+257,37,135,2,"The ""best"" one I have"
+258,60,126,5,"The ""best"" one I have"
+259,28,38,5,great value
+260,21,55,2,great gift for kids
+261,71,,3,"not great, not terrible"
+262,10,280,1,
+263,30,,3,great value
+264,54,8,2,"not great, not terrible"
+265,53,5,4,great value
+266,3,204,1,Exactly as described
+267,52,230,3,Broke after a week
+268,52,,5,great gift for kids
+269,61,81,2,""
+270,70,,3,
+271,34,120,4,Exactly as described
+272,27,50,4,
+273,36,96,5,""
+274,62,259,1,Exactly as described
+275,3,,3,Broke after a week
+276,40,111,3,
+277,31,294,1,Broke after a week
+278,43,,1,"not great, not terrible"
+279,69,246,1,Exactly as described
+280,40,,4,
+281,64,271,1,Broke after a week
+282,14,143,5,Exactly as described
+283,55,187,3,Broke after a week
+284,7,34,5,"not great, not terrible"
+285,49,160,3,"not great, not terrible"
+286,64,144,5,"not great, not terrible"
+287,1,198,2,Exactly as described
+288,77,,4,"The ""best"" one I have"
+289,59,,5,"The ""best"" one I have"
+290,56,153,1,""
+291,11,212,5,
+292,43,188,5,
+293,75,298,1,Exactly as described
+294,42,103,5,great value
+295,63,,5,great value
+296,3,219,3,great value
+297,53,224,1,"The ""best"" one I have"
+298,62,7,4,Exactly as described
+299,2,288,5,""
+300,4,191,3,great gift for kids
+301,21,266,3,Exactly as described
+302,75,,3,Exactly as described
+303,6,157,5,great gift for kids
+304,47,196,5,""
+305,56,,3,"not great, not terrible"
+306,29,,2,Broke after a week
+307,30,124,5,"The ""best"" one I have"
+308,77,181,4,
+309,11,44,5,Broke after a week
+310,71,159,4,Broke after a week
+311,25,285,4,Exactly as described
+312,78,209,2,"not great, not terrible"
+313,67,159,1,"not great, not terrible"
+314,4,35,3,great gift for kids
+315,49,16,4,Broke after a week
+316,70,,4,"not great, not terrible"
+317,63,196,2,""
+318,17,,2,""
+319,69,,2,Exactly as described
+320,20,37,3,
+321,65,228,2,
+322,53,95,3,great value
+323,70,196,4,Exactly as described
+324,61,300,4,Broke after a week
+325,34,294,1,great gift for kids
+326,58,190,4,
+327,26,,5,"The ""best"" one I have"
+328,49,,2,"not great, not terrible"
+329,47,265,1,
+330,13,194,1,"The ""best"" one I have"
+331,20,297,2,
+332,37,67,4,great gift for kids
+333,18,,5,great value
+334,8,149,2,Exactly as described
+335,50,274,5,great value
+336,37,144,4,Exactly as described
+337,6,140,2,"The ""best"" one I have"
+338,28,116,3,Broke after a week
+339,15,95,3,Broke after a week
+340,61,46,2,"The ""best"" one I have"
+341,47,176,1,Exactly as described
+342,7,272,1,""
+343,55,,4,Broke after a week
+344,41,65,1,"The ""best"" one I have"
+345,76,208,2,Exactly as described
+346,77,199,5,Broke after a week
+347,41,,3,Exactly as described
+348,34,60,4,Exactly as described
+349,34,7,3,"not great, not terrible"
+350,59,225,4,great gift for kids
+351,63,141,4,great value
+352,51,86,2,
+353,56,211,4,""
+354,51,,3,"The ""best"" one I have"
+355,56,234,5,
+356,28,82,3,great gift for kids
+357,54,135,5,Exactly as described
+358,35,285,1,"not great, not terrible"
+359,5,71,2,great value
+360,47,282,5,
+361,48,212,3,Exactly as described
+362,59,127,2,great gift for kids
+363,58,245,1,"not great, not terrible"
+364,62,11,4,""
+365,51,17,1,"The ""best"" one I have"
+366,46,74,1,Exactly as described
+367,5,151,1,""
+368,42,82,3,
+369,64,242,3,Exactly as described
+370,18,254,2,""
+371,23,151,1,"not great, not terrible"
+372,7,,3,
+373,33,,4,"not great, not terrible"
+374,67,,1,""
+375,34,261,1,"not great, not terrible"
+376,50,,2,Exactly as described
+377,35,68,3,"The ""best"" one I have"
+378,54,89,3,
+379,36,3,3,great gift for kids
+380,30,126,5,Broke after a week
+381,9,16,4,Exactly as described
+382,75,152,5,great gift for kids
+383,39,256,1,great gift for kids
+384,23,31,1,great value
+385,10,,4,"not great, not terrible"
+386,19,214,4,Broke after a week
+387,71,232,5,
+388,63,,5,great gift for kids
+389,23,133,5,great gift for kids
+390,31,97,1,"not great, not terrible"
+391,62,87,3,"The ""best"" one I have"
+392,20,63,5,"The ""best"" one I have"
+393,17,137,3,Broke after a week
+394,12,172,5,
+395,40,237,3,Exactly as described
+396,36,209,2,"not great, not terrible"
+397,26,,1,Exactly as described
+398,7,,5,Broke after a week
+399,47,,5,
+400,80,205,3,"not great, not terrible"
+401,4,30,4,Exactly as described
+402,38,,2,great gift for kids
+403,41,,3,""
+404,72,28,3,great gift for kids
+405,49,264,1,
+406,80,165,2,""
+407,43,21,4,great value
+408,33,277,1,great gift for kids
+409,3,282,3,Broke after a week
+410,18,289,5,Broke after a week
+411,33,53,2,"The ""best"" one I have"
+412,43,110,4,great gift for kids
+413,57,221,5,Exactly as described
+414,28,258,5,"not great, not terrible"
+415,27,163,2,great gift for kids
+416,56,,1,"The ""best"" one I have"
+417,53,,1,great value
+418,21,,4,Exactly as described
+419,60,176,5,great value
+420,21,132,2,Broke after a week
+421,3,85,4,great value
+422,68,1,2,""
+423,80,,5,
+424,27,39,4,""
+425,47,294,1,"The ""best"" one I have"
+426,1,164,5,
+427,4,208,5,
+428,40,118,2,Exactly as described
+429,28,,3,great value
+430,13,,5,"not great, not terrible"
+431,3,,1,"The ""best"" one I have"
+432,30,159,1,Exactly as described
+433,31,220,2,""
+434,48,141,5,
+435,15,109,5,"The ""best"" one I have"
+436,4,,4,""
+437,37,116,5,"not great, not terrible"
+438,42,280,1,Broke after a week
+439,28,18,5,Broke after a week
+440,76,,3,
+441,76,236,4,Broke after a week
+442,21,96,1,
+443,32,,1,
+444,53,245,3,Exactly as described
+445,50,105,3,"The ""best"" one I have"
+446,76,194,2,great value
+447,72,29,5,"The ""best"" one I have"
+448,30,145,5,Broke after a week
+449,74,166,5,"The ""best"" one I have"
+450,44,,1,great gift for kids
+451,56,,5,Broke after a week
+452,66,142,4,Broke after a week
+453,56,102,3,great value
+454,67,154,2,"not great, not terrible"
+455,22,,2,great gift for kids
+456,76,127,4,great gift for kids
+457,64,189,3,""
+458,20,163,2,great value
+459,5,228,4,great value
+460,22,94,4,Broke after a week
+461,48,56,4,great value
+462,24,31,3,great value
+463,49,255,4,""
+464,65,,3,
+465,12,,3,great value
+466,77,,5,great gift for kids
+467,28,246,1,""
+468,8,93,1,"not great, not terrible"
+469,4,290,1,"The ""best"" one I have"
+470,61,189,3,
+471,1,174,1,
+472,31,69,4,
+473,28,70,3,"not great, not terrible"
+474,50,,3,great gift for kids
+475,73,,4,""
+476,68,,2,
+477,51,,1,""
+478,11,300,5,
+479,53,285,4,"not great, not terrible"
+480,52,120,2,great gift for kids
+481,24,95,3,Broke after a week
+482,61,,3,"The ""best"" one I have"
+483,24,140,2,Broke after a week
+484,51,40,1,great value
+485,80,83,3,great gift for kids
+486,54,219,2,great value
+487,17,197,3,"not great, not terrible"
+488,27,246,3,great gift for kids
+489,12,,1,Broke after a week
+490,66,,2,"not great, not terrible"
+491,43,258,5,"The ""best"" one I have"
+492,11,,5,
+493,63,,4,Broke after a week
+494,73,288,3,Exactly as described
+495,78,114,2,""
+496,23,131,2,
+497,25,157,2,Exactly as described
+498,49,185,1,"not great, not terrible"
+499,72,78,3,great value
+500,63,244,2,""
+501,28,24,2,great value
+502,75,123,1,Exactly as described
+503,33,167,1,""
+504,15,229,1,"not great, not terrible"
+505,80,28,3,Exactly as described
+506,38,134,2,Exactly as described
+507,23,,3,great gift for kids
+508,22,112,4,
+509,45,169,2,""
+510,5,95,1,""
+511,57,292,3,"The ""best"" one I have"
+512,24,172,1,
+513,22,25,2,"The ""best"" one I have"
+514,65,98,3,""
+515,8,29,1,Broke after a week
+516,43,110,1,"not great, not terrible"
+517,34,284,1,Exactly as described
+518,57,,5,Broke after a week
+519,79,44,5,"not great, not terrible"
+520,69,,3,"not great, not terrible"
+521,61,,5,
+522,24,157,5,""
+523,9,52,4,""
+524,54,,2,Exactly as described
+525,42,114,4,Broke after a week
+526,59,,2,""
+527,57,152,1,great gift for kids
+528,30,146,5,Broke after a week
+529,39,112,1,
+530,44,31,1,"not great, not terrible"
+531,46,43,4,""
+532,58,113,4,great gift for kids
+533,55,,5,Broke after a week
+534,74,82,2,"The ""best"" one I have"
+535,31,194,4,great gift for kids
+536,20,215,4,great gift for kids
+537,59,208,3,"The ""best"" one I have"
+538,21,45,4,great gift for kids
+539,40,207,5,
+540,31,288,5,Broke after a week
+541,16,214,4,Broke after a week
+542,53,192,5,"not great, not terrible"
+543,36,,2,""
+544,25,189,5,great value
+545,59,81,1,"The ""best"" one I have"
+546,43,42,5,
+547,75,270,3,great gift for kids
+548,10,116,3,great value
+549,25,,1,"not great, not terrible"
+550,65,46,5,Exactly as described
+551,71,283,5,"The ""best"" one I have"
+552,11,62,5,"The ""best"" one I have"
+553,4,6,5,
+554,52,238,2,great value
+555,3,107,4,"not great, not terrible"
+556,76,144,3,Broke after a week
+557,60,252,3,Broke after a week
+558,46,,2,Broke after a week
+559,66,212,3,Exactly as described
+560,72,,5,great value
+561,49,,5,great gift for kids
+562,31,,1,great value
+563,9,,4,Broke after a week
+564,14,213,1,great value
+565,69,,5,great gift for kids
+566,77,180,4,"not great, not terrible"
+567,8,50,1,great value
+568,36,295,4,great gift for kids
+569,42,300,3,Broke after a week
+570,2,252,2,great gift for kids
+571,51,,4,great gift for kids
+572,46,,4,
+573,57,,3,great value
+574,71,224,3,Broke after a week
+575,77,245,4,Broke after a week
+576,42,292,2,"The ""best"" one I have"
+577,29,69,4,great gift for kids
+578,70,88,3,Exactly as described
+579,8,,1,great gift for kids
+580,77,,4,great value
+581,69,67,1,
+582,45,160,2,great gift for kids
+583,60,237,2,great gift for kids
+584,12,,5,
+585,66,,1,"The ""best"" one I have"
+586,36,111,5,great gift for kids
+587,42,201,1,great value
+588,48,,3,"not great, not terrible"
+589,33,229,1,"The ""best"" one I have"
+590,23,189,1,great value
+591,25,206,4,great value
+592,17,197,3,great value
+593,20,221,1,
+594,14,114,1,Broke after a week
+595,25,178,1,"not great, not terrible"
+596,64,,4,great gift for kids
+597,46,57,4,""
+598,26,246,4,
+599,23,232,2,Exactly as described
+600,1,151,5,""

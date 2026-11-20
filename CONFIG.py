@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from os.path import abspath, dirname, join
 
 # Settings for generating (RunGenerator.py) and labeling (RunLabelForecaster.py) jobs. The settings of the
@@ -24,7 +25,7 @@ class CONFIG:
     N_JOBS = 10  # number of abstract plans
     N_VERSIONS = 2  # jobs per abstract plan (different tables, filters, group-by fields): N_JOBS * N_VERSIONS jobs
     JOB_SEED = 42  # fixed seed = reproducible jobs; -1 = seed from the plan index only
-    DATA_MANAGER = "TPCH"  # "TPCH" | "JOB" | "IMDB"
+    DATA_MANAGER = "TPCH"  # "TPCH" | "IMDB" | a dataset folder in datasets/, e.g. "JOB" or "example" (see datasets/README.md)
     TARGET_PLATFORM = "SQL"  # "Flink" | "Wayang" | "Spark" | "SQL" | "SQLServer" | "SQLServerFlat"
     # SQLServerFlat: prefix of the table names in the generated queries, e.g. "tpch.dbo." ("" = unqualified)
     SQLSERVER_TABLE_PREFIX = ""
@@ -32,10 +33,14 @@ class CONFIG:
     OUTPUT_PATH = ""
     #################################################################
 
-    # Platforms each DATA_MANAGER supports
+    # Datasets defined by a folder datasets/<name>/ with a catalog.json (python -m datafarm.datasets.add_dataset)
+    DATASETS_PATH = join(PROJECT_PATH, "datasets")
+    # Platforms every dataset defined by a folder supports
+    DATASET_PLATFORMS = ["Flink", "Wayang", "Spark", "SQL", "SQLServer"]
+
+    # Platforms each built-in DATA_MANAGER supports
     SUPPORTED_PLATFORMS = {
         "TPCH": ["Flink", "Wayang", "Spark", "SQL", "SQLServer", "SQLServerFlat"],
-        "JOB": ["Wayang", "Spark", "SQL", "SQLServer"],
         "IMDB": ["Flink"],
     }
 
@@ -44,8 +49,30 @@ class CONFIG:
     INPUT_WORKLOAD = {
         "TPCH": ("input-workloads/tpch/", "TPC_H", 6, 3),
         "IMDB": ("input-workloads/tpch/", "TPC_H", 6, 3),
-        "JOB": ("input-workloads/job/", "JOB_", -1, -1),
     }
+
+    @classmethod
+    def dataset_folder(cls, name):
+        """The folder of a dataset defined by a catalog: a folder in datasets/ (name matched case-insensitively)
+        or a path, which must contain catalog.json; None if there is none."""
+        for cand in (join(cls.DATASETS_PATH, name), join(cls.DATASETS_PATH, name.lower()), name):
+            if os.path.isfile(join(cand, "catalog.json")):
+                return abspath(cand)
+        return None
+
+    @classmethod
+    def datasets(cls):
+        """Names of the datasets defined by a folder in datasets/."""
+        if not os.path.isdir(cls.DATASETS_PATH):
+            return []
+        return sorted(d for d in os.listdir(cls.DATASETS_PATH) if os.path.isfile(join(cls.DATASETS_PATH, d, "catalog.json")))
+
+    @classmethod
+    def platforms_of(cls, dataset):
+        """The platforms a dataset supports, or None if the dataset does not exist."""
+        if dataset in cls.SUPPORTED_PLATFORMS:
+            return cls.SUPPORTED_PLATFORMS[dataset]
+        return cls.DATASET_PLATFORMS if cls.dataset_folder(dataset) else None
 
     @classmethod
     def update(cls, **settings):
@@ -63,19 +90,28 @@ class CONFIG:
         cls.ABSTRACT_PLAN_GENERATOR = join(cls.PROJECT_PATH, "datafarm", "abstract_generation")
         cls.JOB_GENERATOR = join(cls.PROJECT_PATH, "datafarm", "instantiation")
 
+        # A dataset defined by a folder: the job generator reads its catalog.json, the abstract plans are
+        # learned from the input plans its seed queries were turned into (workload/)
+        cls.DATASET_FOLDER = None if cls.DATA_MANAGER in cls.INPUT_WORKLOAD else cls.dataset_folder(cls.DATA_MANAGER)
+        if cls.DATASET_FOLDER:
+            workload = (join(cls.DATASET_FOLDER, "workload"), "", -1, -1)
+        else:
+            workload = cls.INPUT_WORKLOAD.get(cls.DATA_MANAGER)
+            if workload is None:
+                raise ValueError(f"Unknown dataset '{cls.DATA_MANAGER}': not one of {', '.join(cls.INPUT_WORKLOAD)} "
+                                 f"and no {join(cls.DATASETS_PATH, cls.DATA_MANAGER, 'catalog.json')}")
+
         # Path to original exec plans
-        cls.ORIG_EXEC_PLAN_FOLDER = join(
-            cls.PROJECT_PATH, cls.INPUT_WORKLOAD[cls.DATA_MANAGER][0]
-        )  # <absolute_path_to_input_workload>
-        cls.ORIG_EXEC_PLAN_FILTER = cls.INPUT_WORKLOAD[cls.DATA_MANAGER][1]
-        cls.ABSTRACT_PLAN_MAX_DEPTH = cls.INPUT_WORKLOAD[cls.DATA_MANAGER][2]
-        cls.ABSTRACT_PLAN_MAX_JOINS = cls.INPUT_WORKLOAD[cls.DATA_MANAGER][3]
+        cls.ORIG_EXEC_PLAN_FOLDER = join(cls.PROJECT_PATH, workload[0])  # <absolute_path_to_input_workload>
+        cls.ORIG_EXEC_PLAN_FILTER = workload[1]
+        cls.ABSTRACT_PLAN_MAX_DEPTH = workload[2]
+        cls.ABSTRACT_PLAN_MAX_JOINS = workload[3]
 
         # Path of generated data destination
         # Generated output: abstract plans, jobs, execution plans and labels of each experiment
         cls.BASE_PATH = cls.OUTPUT_PATH or join(cls.PROJECT_PATH, "training-data/")
 
-        cls.EXPERIMENT_PATH = join(cls.BASE_PATH, (cls.EXPERIMENT_ID or f"{cls.TARGET_PLATFORM}_{cls.DATA_MANAGER}") + "/")
+        cls.EXPERIMENT_PATH = join(cls.BASE_PATH, (cls.EXPERIMENT_ID or f"{cls.TARGET_PLATFORM}_{os.path.basename(cls.DATA_MANAGER.rstrip('/'))}") + "/")
 
         cls.GENERATED_ABSTRACT_EXECUTION_PLAN_FOLDER = join(
             cls.EXPERIMENT_PATH, "generated_abstract_exec_plans"
