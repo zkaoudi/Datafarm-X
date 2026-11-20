@@ -199,7 +199,7 @@ object JOBSchema {
     }
     s"""-- IMDB tables of the Join Order Benchmark for SQL Server, used by the generated SQL jobs.
        |-- The JOB CSV files use backslash escapes, which BULK INSERT cannot read; load them with
-       |--   python datafarm/execution/sql/load_sqlserver.py --dataset JOB --data <imdb_csv_dir> --connection "<ODBC connection string>"
+       |--   python datafarm/execution/sql/load_sql_data.py --engine sqlserver --dataset JOB --data <imdb_csv_dir> --connection "<ODBC connection string>"
        |
        |${creates.mkString("\n\n")}
        |""".stripMargin
@@ -221,7 +221,9 @@ object JOBSchema {
       s"CREATE TABLE ${t.name} (\n${cols.mkString(",\n")}\n);"
     }
     s"""-- IMDB tables of the Join Order Benchmark, used by the generated SQL jobs.
-       |-- Load the CSV files of the JOB dump (comma separated, '"' quotes, '\\' escapes), e.g. in PostgreSQL:
+       |-- Load the CSV files of the JOB dump (comma separated, '"' quotes, '\\' escapes) with
+       |--   python datafarm/execution/sql/load_sql_data.py --engine postgres|duckdb --dataset JOB --data <imdb_csv_dir> --connection "<connection>"
+       |-- which parses them as the generated Wayang and Spark jobs do, or e.g. in PostgreSQL:
        |--   \\copy title FROM 'title.csv' WITH (FORMAT csv, ESCAPE '\\')
        |-- or in DuckDB (its dialect detection does not handle these files, so it is switched off):
        |--   COPY title FROM 'title.csv' (FORMAT csv, DELIMITER ',', QUOTE '"', ESCAPE '\\', HEADER false, AUTO_DETECT false);

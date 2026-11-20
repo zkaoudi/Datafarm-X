@@ -107,7 +107,22 @@ jobs:
               --output "$RUNNER_TEMP/wayang_results_$platforms.csv"
             cat "$RUNNER_TEMP/wayang_results_$platforms.csv"
           done
-      - name: Same row counts on Spark, Wayang and SQL (DuckDB)
+      - name: Run the TPC-H SQL jobs on DuckDB and PostgreSQL
+        if: matrix.python == '3.13'
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
+          pip install "psycopg[binary]"
+          sudo systemctl start postgresql.service
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres'"
+          export DATAFARM_POSTGRES="host=localhost user=postgres password=postgres dbname=postgres"
+          export DATAFARM_DUCKDB="$RUNNER_TEMP/tpch.duckdb"
+          for engine in duckdb postgres; do
+            python datafarm/execution/sql/load_sql_data.py --engine $engine --dataset TPCH --data "$RUNNER_TEMP/tpch" \
+              --schema training-data/SQL_TPCH/generated_jobs/schema.sql
+            python datafarm/execution/sql/run_sql_jobs.py training-data/SQL_TPCH/generated_jobs --engine $engine \
+              --timeout 600 --output "$RUNNER_TEMP/sql_results_$engine.csv"
+          done
+      - name: Same row counts on Spark, Wayang, DuckDB and PostgreSQL
         if: matrix.python == '3.13'
         run: |
           exec > >(tee -a "$RUNNER_TEMP/ci.log") 2>&1
@@ -115,7 +130,8 @@ jobs:
             spark="$RUNNER_TEMP/spark_results.csv" \
             wayang-java="$RUNNER_TEMP/wayang_results_java.csv" \
             wayang-spark="$RUNNER_TEMP/wayang_results_spark.csv" \
-            --sql-jobs training-data/SQL_TPCH/generated_jobs --data "$RUNNER_TEMP/tpch"
+            sql-duckdb="$RUNNER_TEMP/sql_results_duckdb.csv" \
+            sql-postgres="$RUNNER_TEMP/sql_results_postgres.csv"
       - name: Report the end of the log
         if: failure()
         run: |

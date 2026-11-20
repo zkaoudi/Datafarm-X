@@ -147,7 +147,7 @@ change independently.
 | `datafarm/instantiation/` | **Instantiation** (Scala, sbt project). `instantiation.JobGenerator` turns abstract plans into jobs: `platform/{flink,wayang,spark,sql}` translates operators for each platform, `dataset/{tpch,job,imdb}` holds the schemas, joins, filters and statistics of each dataset. |
 | `datafarm/labeling/` | **Label forecasting** (Python): features, job sampling, the quantile-forest model and the Flink task-manager client used by `RunLabelForecaster.py`. |
 | `datafarm/datasets_metadata/` | Dataset metadata, one folder per dataset (`tpch/`, `job/`, `imdb/`): `MetaDataAnalyzer.py` computes the statistics the job generator uses (filter selectivities, distinct group-by values) from the data; `TableMetaData.py` holds the table schemas (and, for TPC-H and IMDB, table cardinalities). |
-| `datafarm/execution/` | **Execution**: tools that run generated jobs and collect their run times or plans, used for labeling. `flink/BuildAndSubmit.py` builds and submits Flink jobs; `spark/run_spark_jobs.py` builds and runs Spark jobs; `wayang/run_wayang_jobs.py` compiles and runs Wayang jobs; `sql/` loads data into SQL Server and runs SQL jobs. |
+| `datafarm/execution/` | **Execution**: tools that run generated jobs and collect their run times or plans, used for labeling. `flink/BuildAndSubmit.py` builds and submits Flink jobs; `spark/run_spark_jobs.py` builds and runs Spark jobs; `wayang/run_wayang_jobs.py` compiles and runs Wayang jobs; `sql/` loads data into DuckDB, PostgreSQL or SQL Server and runs SQL jobs there. |
 | `input-workloads/` | The input workloads abstract plans are learned from: `tpch/` (Flink execution plans of TPC-H queries) and `job/` (one plan per JOB query). |
 | `training-data/` | **Output**, one folder per experiment (`--experiment`, default `<platform>_<dataset>`): abstract plans, generated jobs, their execution plans and labels; see its [README](training-data/README.md). Not tracked by git. |
 | `experiments/` | Scripts and configurations of the DataFarm paper's experiments; not used by the pipeline. |
@@ -272,6 +272,37 @@ and DuckDB.
   which can differ from Java's order only between rows that agree on all earlier columns; TPC-H and JOB rows start
   with their key columns, so this does not happen.
 
+#### Loading data and running SQL jobs
+
+`datafarm/execution/sql/` has one loader and one runner for all SQL targets; `--engine` picks the database:
+
+| `--engine` | Jobs (`--platform`) | `--connection` | Python package |
+|---|---|---|---|
+| `duckdb` | `SQL` | database file (default `datafarm.duckdb`) | `duckdb` |
+| `postgres` | `SQL` | libpq connection string or `postgresql://` URL | `psycopg[binary]` |
+| `sqlserver` | `SQLServer`, `SQLServerFlat` | ODBC connection string (needs an ODBC driver for SQL Server) | `pyodbc` |
+
+The connection can also be set in the environment variable `DATAFARM_DUCKDB`, `DATAFARM_POSTGRES` or
+`DATAFARM_SQLSERVER`.
+
+```bash
+# create the tables of schema.sql and load the data
+python datafarm/execution/sql/load_sql_data.py --engine postgres --dataset TPCH --data /path/to/tpch \
+    --schema training-data/<experiment>/generated_jobs/schema.sql --connection "host=… dbname=… user=…"
+# run all jobs of a folder (JobXvY.sql or JobXvY.txt)
+python datafarm/execution/sql/run_sql_jobs.py training-data/<experiment>/generated_jobs --engine postgres \
+    --connection "…" --output results.csv [--timeout 600] [--plans plansDir]
+```
+
+- **Loading:** the loader parses the files as the generated Wayang and Spark jobs do (for JOB: backslash escapes,
+  empty unquoted field = NULL), so every platform sees the same data; the databases' own CSV readers handle the JOB
+  files differently. It loads with `COPY` in PostgreSQL, in batches in DuckDB and SQL Server. `--truncate` deletes
+  existing rows first and `--tables` loads only some tables.
+- **Running:** the runner writes a CSV with, per job, the status (`ok`, `error` or `timeout`), the number of rows
+  of the result, the run time (executing the query and fetching its result), and the error. `--jobs` runs only some
+  jobs. With `--plans DIR`, it saves each job's estimated plan instead of running it: `EXPLAIN (FORMAT JSON)` in
+  DuckDB and PostgreSQL (`JobXvY.json`), `SHOWPLAN_XML` in SQL Server (`JobXvY.xml`).
+
 ### SQL Server
 
 Two targets generate jobs for Microsoft SQL Server.
@@ -300,17 +331,9 @@ structured description of it:
 - JOB is not supported: the format stores one column name per join, so `cast_info.movie_id = title.id` cannot be
   expressed.
 
-**Loading data and running jobs** (needs `pip install pyodbc` and an ODBC driver for SQL Server):
-
-```bash
-# create the tables and load the data (BULK INSERT cannot read JOB's backslash-escaped CSVs)
-python datafarm/execution/sql/load_sqlserver.py --dataset JOB --data /path/to/imdb --schema training-data/<experiment>/generated_jobs/schema.sql \
-    --connection "DRIVER={ODBC Driver 18 for SQL Server};SERVER=…;DATABASE=…;UID=…;PWD=…;TrustServerCertificate=yes"
-# run all jobs of a folder (JobXvY.sql or JobXvY.txt), or save their estimated plans with --showplan <dir>
-python datafarm/execution/sql/run_sql_jobs.py training-data/<experiment>/generated_jobs --output results.csv --connection "…"
-```
-
-The connection string can also be set in the environment variable `DATAFARM_SQLSERVER`.
+**Loading data and running jobs:** see [Loading data and running SQL jobs](#loading-data-and-running-sql-jobs), with
+`--engine sqlserver`. For TPC-H, `BULK INSERT` (see the header of `schema.sql`) loads faster than the loader; the JOB
+files need the loader, since `BULK INSERT` cannot read their backslash escapes.
 
 ---
 
@@ -396,9 +419,9 @@ every job.
 
 Labeling is optional: the generated jobs and `generated_jobs_info.json` are usable on their own. It currently
 labels **Flink jobs on TPC-H** only, and submits them through `datafarm/execution/flink/BuildAndSubmit.py` to a
-running Flink 1.10 cluster. For Spark, Wayang and SQL Server, `datafarm/execution/spark/run_spark_jobs.py`,
-`datafarm/execution/wayang/run_wayang_jobs.py` and `datafarm/execution/sql/run_sql_jobs.py` run the jobs and report
-their run times.
+running Flink 1.10 cluster. For Spark, Wayang and SQL (DuckDB, PostgreSQL, SQL Server),
+`datafarm/execution/spark/run_spark_jobs.py`, `datafarm/execution/wayang/run_wayang_jobs.py` and
+`datafarm/execution/sql/run_sql_jobs.py` run the jobs and report their run times.
 
 ```bash
 pip install -r requirements-labeling.txt   # Python 3.6-3.8: the labeling code needs scikit-learn 0.22

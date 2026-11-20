@@ -21,7 +21,9 @@ classifiers = [
 [project.optional-dependencies]
 # PDF drawings of the abstract plans (pygraphviz needs the graphviz system package)
 plots = ["matplotlib", "pygraphviz"]
-# running SQL Server jobs and loading data (datafarm/execution/sql)
+# loading data and running SQL jobs (datafarm/execution/sql), one extra per --engine
+duckdb = ["duckdb"]
+postgres = ["psycopg[binary]"]
 sqlserver = ["pyodbc"]
 
 [project.urls]
