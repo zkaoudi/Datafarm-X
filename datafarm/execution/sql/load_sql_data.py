@@ -11,11 +11,13 @@ Usage:
         --data /path/to/data --schema training-data/<EXPERIMENT_ID>/generated_jobs/schema.sql [--connection ...]
 
 --schema runs the CREATE TABLE statements first (the schema.sql written next to the generated SQL jobs:
---platform SQL for duckdb and postgres, SQLServer for sqlserver); without it the tables must exist.
+--platform SQL for duckdb and postgres, SQLServer for sqlserver) and then loads only the tables it
+creates, unless --tables is given; without --schema the tables must exist.
 See engines.py for the connection of each engine.
 """
 import argparse
 import os
+import re
 import sys
 import time
 
@@ -73,12 +75,18 @@ def load(engine, conn, dataset, data_dir, tables=None, batch=10000, fast=True, t
     return counts
 
 
+def created_tables(script):
+    """Names of the tables a script creates, in order (comment lines skipped)."""
+    sql = "\n".join(l for l in script.splitlines() if not l.lstrip().startswith("--"))
+    return [m.lower() for m in re.findall(r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z_][\w.]*)", sql, re.I)]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     engines.add_arguments(ap)
     ap.add_argument("--dataset", required=True, choices=["JOB", "TPCH"])
     ap.add_argument("--data", required=True, help="folder with the .csv (JOB) or .tbl (TPC-H) files")
-    ap.add_argument("--schema", help="schema.sql to run first (CREATE TABLE)")
+    ap.add_argument("--schema", help="schema.sql to run first (CREATE TABLE); without --tables, only the tables it creates are loaded")
     ap.add_argument("--tables", help="comma-separated subset of tables")
     ap.add_argument("--batch", type=int, default=10000, help="rows per insert batch (duckdb, sqlserver)")
     ap.add_argument("--truncate", action="store_true", help="delete existing rows first")
@@ -88,9 +96,13 @@ def main(argv=None):
 
     conn = engines.connect(args.engine, engines.connection_string(args.engine, args.connection),
                            autocommit=args.engine != "sqlserver")
+    tables = args.tables.split(",") if args.tables else None
     if args.schema:
-        engines.execute_script(args.engine, conn, open(args.schema, encoding="utf-8").read())
-    load(args.engine, conn, args.dataset, args.data, args.tables.split(",") if args.tables else None,
+        script = open(args.schema, encoding="utf-8").read()
+        engines.execute_script(args.engine, conn, script)
+        # the schema.sql of generated jobs only creates the tables they use: load just those
+        tables = tables or created_tables(script)
+    load(args.engine, conn, args.dataset, args.data, tables,
          batch=args.batch, fast=not args.no_fast_executemany, truncate=args.truncate)
     conn.close()
 
