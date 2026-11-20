@@ -25,7 +25,7 @@ class CONFIG:
     N_JOBS = 10  # number of abstract plans
     N_VERSIONS = 2  # jobs per abstract plan (different tables, filters, group-by fields): N_JOBS * N_VERSIONS jobs
     JOB_SEED = 42  # fixed seed = reproducible jobs; -1 = seed from the plan index only
-    DATA_MANAGER = "TPCH"  # "TPCH" | "JOB" | "IMDB" | the name of a dataset folder in datasets/ (see datasets/README.md)
+    DATA_MANAGER = "TPCH"  # "TPCH" | "IMDB" | a dataset folder in datasets/, e.g. "JOB" or "example" (see datasets/README.md)
     TARGET_PLATFORM = "SQL"  # "Flink" | "Wayang" | "Spark" | "SQL" | "SQLServer" | "SQLServerFlat"
     # SQLServerFlat: prefix of the table names in the generated queries, e.g. "tpch.dbo." ("" = unqualified)
     SQLSERVER_TABLE_PREFIX = ""
@@ -41,7 +41,6 @@ class CONFIG:
     # Platforms each built-in DATA_MANAGER supports
     SUPPORTED_PLATFORMS = {
         "TPCH": ["Flink", "Wayang", "Spark", "SQL", "SQLServer", "SQLServerFlat"],
-        "JOB": ["Wayang", "Spark", "SQL", "SQLServer"],
         "IMDB": ["Flink"],
     }
 
@@ -50,7 +49,6 @@ class CONFIG:
     INPUT_WORKLOAD = {
         "TPCH": ("input-workloads/tpch/", "TPC_H", 6, 3),
         "IMDB": ("input-workloads/tpch/", "TPC_H", 6, 3),
-        "JOB": ("input-workloads/job/", "JOB_", -1, -1),
     }
 
     @classmethod

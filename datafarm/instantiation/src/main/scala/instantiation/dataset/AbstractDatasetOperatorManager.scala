@@ -4,7 +4,6 @@ import instantiation.AbstractJob
 import instantiation.dataset.generic.{Catalog, GenericDatasetOperatorManager}
 import instantiation.dataset.imdb.IMDBKDatasetOperatorManager
 import instantiation.platform.flink.AbstractFlinkJob
-import instantiation.dataset.job.JOBDatasetOperatorManager
 import instantiation.dataset.tpch.TPCHDatasetOperatorManager
 import instantiation.dataset.utils.getElementBySeed
 
@@ -167,8 +166,6 @@ object AbstractDatasetOperatorManager {
       throw new Exception(s"""DATA_MANAGER "IMDB" does not support TARGET_PLATFORM "$p"""")
     else if (s == "IMDB")
       IMDBKDatasetOperatorManager
-    else if (s == "JOB")
-      new JOBDatasetOperatorManager(p)
     else
       // any dataset defined by a catalog: datasets/<name>/catalog.json, its folder or the file itself
       new GenericDatasetOperatorManager(Catalog.load(s), p)
